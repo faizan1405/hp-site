@@ -38,7 +38,7 @@ export const metadata: Metadata = {
         url: assets.poster,
         width: 1920,
         height: 1080,
-        alt: "A glacier valley, the source of Aqua Glacia mineral water",
+        alt: "A Himalayan glacier valley, the source of Himalaya Sparsh mineral water",
       },
     ],
   },

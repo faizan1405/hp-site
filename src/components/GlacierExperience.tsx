@@ -487,7 +487,7 @@ export function GlacierExperience() {
                 data-intro
                 src={assets.logo}
                 alt={brand.logoAlt}
-                width={150}
+                width={170}
                 height={50}
                 priority
                 className="h-10 w-auto md:h-12"

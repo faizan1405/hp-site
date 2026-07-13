@@ -69,7 +69,7 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
         <Image
           src={assets.logo}
           alt={brand.logoAlt}
-          width={150}
+          width={170}
           height={50}
           priority
           className="h-12 w-auto"

@@ -27,7 +27,7 @@ export function LoadingScreen({ progress, hidden }: LoadingScreenProps) {
       <Image
         src={assets.logo}
         alt={brand.logoAlt}
-        width={132}
+        width={150}
         height={44}
         priority
         className="h-11 w-auto opacity-90"
