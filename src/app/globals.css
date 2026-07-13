@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@theme {
+  --color-glacier-50: #f0f8fd;
+  --color-glacier-100: #dceffa;
+  --color-glacier-300: #9fd4f0;
+  --color-glacier-500: #6fbfe6;
+  --color-glacier-600: #3d94c4;
+
+  --color-ice: #f4f9fc;
+  --color-silver: #c3d1dc;
+  --color-silver-dim: #8fa3b3;
+
+  --color-navy-900: #061321;
+  --color-navy-800: #0b2033;
+  --color-navy-600: #14324b;
+
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-display);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: var(--color-navy-900);
+  /* ScrollTrigger pinning conflicts with CSS smooth scrolling. */
+  scroll-behavior: auto;
+}
+
+body {
+  background-color: var(--color-navy-900);
+  color: var(--color-ice);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Layers the scrub timeline controls start hidden, so nothing flashes before
+   GSAP has rendered the timeline at position 0. */
+.scene-layer {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Film grain. Static (no animation) so it costs nothing after the first paint,
+   and desktop-only — the blend mode is not worth it on a phone GPU. */
+.film-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+@media (min-width: 768px) {
+  .film-grain::after {
+    display: block;
+  }
+}
+
+@keyframes scroll-cue {
+  0% {
+    transform: translateY(-30%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+}
+
+.animate-scroll-cue {
+  animation: scroll-cue 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus ring that stays visible against the video background. */
+:focus-visible {
+  outline: 2px solid var(--color-glacier-100);
+  outline-offset: 3px;
+  border-radius: 2px;
+}

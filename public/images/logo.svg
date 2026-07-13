@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100" role="img" aria-label="Aqua Glacia">
+  <title>Aqua Glacia</title>
+  <g fill="none" stroke="#F4F9FC" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 66 L40 26 L58 66 Z" />
+    <path d="M30 48 L40 40 L50 48" stroke="#9FD4F0" />
+  </g>
+  <text x="78" y="53" font-family="Georgia, 'Times New Roman', serif" font-size="30" letter-spacing="1" fill="#F4F9FC">Aqua Glacia</text>
+  <text x="79" y="72" font-family="Helvetica, Arial, sans-serif" font-size="9" letter-spacing="5.5" fill="#8FA3B3">GLACIER RESERVE</text>
+</svg>
