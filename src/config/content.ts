@@ -61,7 +61,54 @@ export type DeviceElement = {
   scrollRange: { start: number; end: number };
 };
 
+/**
+ * One rendition of the glacier journey, exploded into still frames.
+ *
+ * The pinned experience does not play a video: it draws one of these frames into
+ * a canvas per animation frame, indexed straight off scroll progress. That is the
+ * only way to get frame-accurate, instantly-reversible scrubbing — a `<video>`
+ * element throttles and coalesces `currentTime` seeks, which is what made fast
+ * and reverse scrolling stutter.
+ */
+export type FrameSet = {
+  /** Directory the frames live in, without a trailing slash. */
+  path: string;
+  /** How many frames it contains. Files are `frame-0001.webp` … `frame-NNNN.webp`. */
+  count: number;
+  /** Intrinsic pixel size of every frame. Used for the object-cover maths. */
+  width: number;
+  height: number;
+};
+
+/**
+ * Generated from `public/videos/glacier-journey.mp4` (1280×720, 30fps, 8.4s) with
+ * `scripts/extract-frames.mjs`. Re-run that script if the footage changes and
+ * update the counts below to match what it prints.
+ *
+ * Desktop is the source's native resolution. Mobile is half-weight: fewer frames
+ * (a phone scrolls a shorter pin) at a smaller size, which keeps the whole set
+ * under 2 MB.
+ */
+export const frames = {
+  desktop: {
+    path: "/frames/desktop",
+    count: 180,
+    width: 1280,
+    height: 720,
+  },
+  mobile: {
+    path: "/frames/mobile",
+    count: 96,
+    width: 768,
+    height: 432,
+  },
+} as const satisfies Record<"desktop" | "mobile", FrameSet>;
+
 export const assets = {
+  /**
+   * Kept for the two fallback paths only — the `lite` mode loop and the OG image.
+   * The scrubbed experience reads `frames` above and never touches this file.
+   */
   video: "/videos/glacier-journey.mp4",
   poster: "/images/video-poster.jpg",
   /**

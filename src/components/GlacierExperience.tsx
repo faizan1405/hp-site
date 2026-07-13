@@ -8,11 +8,10 @@ import { FinalCTA } from "@/components/FinalCTA";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ProductReveal } from "@/components/ProductReveal";
 import { ReducedMotionFallback } from "@/components/ReducedMotionFallback";
-import { ScrollVideo } from "@/components/ScrollVideo";
+import { ScrollCanvas } from "@/components/ScrollCanvas";
 import { StoryOverlay } from "@/components/StoryOverlay";
 import {
   activeDeviceElements,
-  assets,
   hasPurchaseAction,
   product,
   scenes,
@@ -20,6 +19,7 @@ import {
   type ScrollRange,
 } from "@/config/content";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
+import { useFrameSequence } from "@/hooks/useFrameSequence";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -27,16 +27,18 @@ if (typeof window !== "undefined") {
 
 const { opening, source, origin, descent, device, benefits, cta } = scenes;
 
-/** Give up on the video after this long and fall back to the poster. */
-const METADATA_TIMEOUT_MS = 15_000;
-
 /**
  * Extra scroll beyond the first viewport, in multiples of the viewport height.
  * The pin spacer turns these into a ~600vh (desktop) / ~450vh (mobile) page.
  */
 const SCROLL_VIEWPORTS = { desktop: 5, mobile: 3.5 } as const;
 
-type Status = "loading" | "ready" | "error";
+/**
+ * How many rAF ticks the draw loop coasts for after the picture has caught up
+ * with the timeline before it stands down. At 60Hz this is half a second, which
+ * comfortably outlasts the 0.6s scrub ease.
+ */
+const IDLE_FRAMES_BEFORE_STANDDOWN = 40;
 
 type RevealOptions = {
   /** Distance the layer travels up into place. */
@@ -102,12 +104,22 @@ function reveal(
 export function GlacierExperience() {
   const mode = useExperienceMode();
 
-  const [status, setStatus] = useState<Status>("loading");
-  const [loadProgress, setLoadProgress] = useState(0);
   const [loaderMounted, setLoaderMounted] = useState(true);
 
   const stageRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  /**
+   * The frame sequence: loads its opening frames, reports ready, and streams the
+   * rest in behind the live page. `draw` paints a frame into the canvas and is
+   * safe to call on every rAF tick — it is a no-op when the frame has not changed,
+   * and it never touches React state.
+   */
+  const {
+    status,
+    progress: loadProgress,
+    draw,
+  } = useFrameSequence({ enabled: mode === "scrub", canvasRef });
 
   const openingRef = useRef<HTMLDivElement>(null);
   const sourceRef = useRef<HTMLDivElement>(null);
@@ -129,137 +141,6 @@ export function GlacierExperience() {
   const benefitRefs = useRef<(HTMLDivElement | null)[]>([]);
   const ctaRef = useRef<HTMLElement>(null);
 
-  // Scrub state lives in refs: touching React state on every frame would
-  // re-render the whole tree sixty times a second.
-  const durationRef = useRef(0);
-  const seekingRef = useRef(false);
-
-  /* ------------------------------------------------------------------ *
-   * Load the video far enough to know its duration.
-   * ------------------------------------------------------------------ */
-  useEffect(() => {
-    if (mode !== "scrub") return;
-    const video = videoRef.current;
-    if (!video) return;
-
-    let settled = false;
-    let creep = 0;
-
-    const fail = (reason: string) => {
-      if (settled) return;
-      settled = true;
-      console.error(
-        `[GlacierExperience] ${reason} Falling back to the poster image.`,
-        {
-          src: assets.video,
-          mediaError: video.error?.message ?? video.error?.code ?? null,
-          networkState: video.networkState,
-          readyState: video.readyState,
-        },
-      );
-      setStatus("error");
-    };
-
-    const succeed = () => {
-      if (settled) return;
-      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-
-      settled = true;
-      durationRef.current = video.duration;
-      video.pause();
-      setLoadProgress(100);
-      setStatus("ready");
-      // The loader is coming down and the pin is about to mount: re-measure.
-      ScrollTrigger.refresh();
-    };
-
-    const onDownloadProgress = () => {
-      if (settled || !Number.isFinite(video.duration) || video.duration <= 0) {
-        return;
-      }
-      const { buffered, duration } = video;
-      if (buffered.length === 0) return;
-
-      const fraction = buffered.end(buffered.length - 1) / duration;
-      setLoadProgress((current) => Math.max(current, Math.min(96, fraction * 100)));
-    };
-
-    const onError = () => fail("The glacier video failed to load.");
-    const onSeeking = () => {
-      seekingRef.current = true;
-    };
-    const onSeeked = () => {
-      seekingRef.current = false;
-    };
-
-    const sourceElement = video.querySelector("source");
-
-    video.addEventListener("loadedmetadata", succeed);
-    video.addEventListener("canplay", succeed);
-    video.addEventListener("progress", onDownloadProgress);
-    video.addEventListener("error", onError);
-    video.addEventListener("seeking", onSeeking);
-    video.addEventListener("seeked", onSeeked);
-    // A missing file surfaces as an error on the <source>, not on the <video>.
-    sourceElement?.addEventListener("error", onError);
-
-    // Keep the bar moving before the first `progress` event arrives.
-    const creepTimer = window.setInterval(() => {
-      if (settled) return;
-      creep = Math.min(creep + (90 - creep) * 0.08, 90);
-      setLoadProgress((current) => Math.max(current, creep));
-    }, 160);
-
-    const timeoutTimer = window.setTimeout(
-      () => fail("Video metadata did not arrive in time."),
-      METADATA_TIMEOUT_MS,
-    );
-
-    // Served from cache: the events above may already have fired.
-    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) succeed();
-
-    return () => {
-      window.clearInterval(creepTimer);
-      window.clearTimeout(timeoutTimer);
-      video.removeEventListener("loadedmetadata", succeed);
-      video.removeEventListener("canplay", succeed);
-      video.removeEventListener("progress", onDownloadProgress);
-      video.removeEventListener("error", onError);
-      video.removeEventListener("seeking", onSeeking);
-      video.removeEventListener("seeked", onSeeked);
-      sourceElement?.removeEventListener("error", onError);
-    };
-  }, [mode]);
-
-  /* ------------------------------------------------------------------ *
-   * iOS refuses to buffer — and therefore to seek — a video that has never
-   * been played. One play/pause on the first gesture unlocks it.
-   * ------------------------------------------------------------------ */
-  useEffect(() => {
-    if (mode !== "scrub" || status !== "ready") return;
-    const video = videoRef.current;
-    if (!video) return;
-
-    const events = ["touchstart", "pointerdown", "wheel", "keydown"] as const;
-
-    const unlock = () => {
-      events.forEach((event) => window.removeEventListener(event, unlock));
-      void Promise.resolve(video.play())
-        .then(() => video.pause())
-        .catch(() => {
-          // Playback refused; desktop scrubbing works without the unlock anyway.
-        });
-    };
-
-    events.forEach((event) =>
-      window.addEventListener(event, unlock, { passive: true }),
-    );
-
-    return () => {
-      events.forEach((event) => window.removeEventListener(event, unlock));
-    };
-  }, [mode, status]);
-
   /* ------------------------------------------------------------------ *
    * The pinned, scrubbed master timeline.
    * ------------------------------------------------------------------ */
@@ -279,8 +160,8 @@ export function GlacierExperience() {
       (self) => {
         const isDesktop = Boolean(self.conditions?.isDesktop);
 
-        // Mobile seeks less often and skips the blur transitions entirely.
-        const seekThreshold = isDesktop ? 0.02 : 0.08;
+        // Mobile skips the blur transitions entirely: a full-screen backdrop-blur
+        // on a phone costs more than every other effect on this page put together.
         const blur = isDesktop ? 10 : 0;
         const viewports = isDesktop
           ? SCROLL_VIEWPORTS.desktop
@@ -501,51 +382,47 @@ export function GlacierExperience() {
         timeline.to({}, { duration: 100 }, 0);
 
         /* -------------------------------------------------------------- *
-         * Drive the video from the timeline. This runs on rAF rather than in
-         * ScrollTrigger's onUpdate so the seek rate is capped at the display's
-         * refresh rate.
+         * Paint the canvas from the timeline.
          *
-         * The loop is NOT stopped when the pin goes inactive: `scrub` keeps
-         * easing the timeline for up to another 0.6s after the last scroll, and
-         * cutting the loop at that moment would freeze the video short of the
-         * end. Instead it retires itself once the picture has caught up with the
-         * timeline, and any scroll wakes it again.
+         * This runs on rAF rather than inside ScrollTrigger's `onUpdate`, which
+         * fires per scroll event: a trackpad or a fast wheel can emit several of
+         * those per displayed frame, and every one of them would be a wasted
+         * `drawImage`. Throttling to rAF means exactly one paint per frame the
+         * screen actually shows, and it means React never sees the scroll at all.
+         *
+         * The loop is NOT stopped when the pin goes inactive: `scrub` keeps easing
+         * the timeline for up to another 0.6s after the last scroll, and cutting
+         * the loop at that moment would freeze the picture short of where the
+         * visitor let go. It retires itself once the picture has caught up with
+         * the timeline instead, and any scroll wakes it again.
+         *
+         * Reverse scrolling needs no special handling whatsoever: the frame index
+         * is a pure function of the timeline's progress, so running the scroll
+         * backwards simply asks for lower indices — all of them already decoded.
          * -------------------------------------------------------------- */
         let rafId: number | null = null;
-        let settledFrames = 0;
+        let idleFrames = 0;
 
-        function seekVideo() {
-          rafId = requestAnimationFrame(seekVideo);
+        const renderFrame = () => {
+          rafId = requestAnimationFrame(renderFrame);
 
-          const video = videoRef.current;
-          const duration = durationRef.current;
-          if (!video || duration <= 0) return;
+          // Read the *timeline's* progress rather than the raw scroll position, so
+          // the picture and the copy share one eased scrub and never drift apart.
+          const painted = draw(timeline.progress());
 
-          // Let the pending seek land instead of queueing another one — this is
-          // what stops a phone from drowning in decode work.
-          if (seekingRef.current) return;
-
-          // Read the *timeline's* progress rather than the raw scroll position,
-          // so the video and the copy share one eased scrub and never drift apart.
-          const target = gsap.utils.clamp(
-            0,
-            duration - 0.05,
-            timeline.progress() * duration,
-          );
-
-          if (Math.abs(target - video.currentTime) < seekThreshold) {
-            // Caught up. Idle for half a second, then stand down.
-            if (++settledFrames > 30) stopLoop();
+          if (painted) {
+            idleFrames = 0;
             return;
           }
 
-          settledFrames = 0;
-          video.currentTime = target;
-        }
+          // Nothing new to paint. Coast a little — the scrub ease is still
+          // running — then stand down and give the frame budget back.
+          if (++idleFrames > IDLE_FRAMES_BEFORE_STANDDOWN) stopLoop();
+        };
 
         const startLoop = () => {
-          settledFrames = 0;
-          if (rafId === null) rafId = requestAnimationFrame(seekVideo);
+          idleFrames = 0;
+          if (rafId === null) rafId = requestAnimationFrame(renderFrame);
         };
 
         const stopLoop = () => {
@@ -553,7 +430,7 @@ export function GlacierExperience() {
           rafId = null;
         };
 
-        const trigger = ScrollTrigger.create({
+        ScrollTrigger.create({
           trigger: stage,
           start: "top top",
           end: () => `+=${window.innerHeight * viewports}`,
@@ -567,7 +444,9 @@ export function GlacierExperience() {
           onToggle: startLoop,
         });
 
-        if (trigger.isActive) startLoop();
+        // Paint the opening frame before the loader lifts, so the reveal never
+        // uncovers an empty canvas.
+        startLoop();
 
         // matchMedia reverts the timeline and the ScrollTrigger for us; the rAF
         // loop is ours to clean up.
@@ -576,7 +455,7 @@ export function GlacierExperience() {
     );
 
     return () => media.revert();
-  }, [mode, status]);
+  }, [mode, status, draw]);
 
   /* ------------------------------------------------------------------ *
    * Opening titles: a one-shot entrance once the loader clears.
@@ -648,8 +527,8 @@ export function GlacierExperience() {
           className="relative h-screen w-full overflow-hidden bg-navy-900"
         >
           {/* Mounted only once the mode is known, so a reduced-motion or
-              low-power visitor never starts downloading the video at all. */}
-          {mode === "scrub" && <ScrollVideo videoRef={videoRef} />}
+              low-power visitor never starts downloading a single frame. */}
+          {mode === "scrub" && <ScrollCanvas canvasRef={canvasRef} />}
 
           {/* Scene 1 — the summit. */}
           <StoryOverlay ref={openingRef}>
