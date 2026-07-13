@@ -3,7 +3,13 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { FinalCTA } from "@/components/FinalCTA";
-import { assets, brand, scenes } from "@/config/content";
+import {
+  activeDeviceElements,
+  assets,
+  deviceImage,
+  product,
+  scenes,
+} from "@/config/content";
 
 type FallbackProps = {
   /**
@@ -13,12 +19,15 @@ type FallbackProps = {
   background: "poster" | "loop";
 };
 
-const { opening, source, journey, product, benefits } = scenes;
+const { opening, source, origin, descent, device, benefits } = scenes;
 
 /**
- * The no-scrubbing path. Same story, same product, same call to action —
+ * The no-scrubbing path. Same story, same device, same call to action —
  * delivered as plain stacked sections that work without GSAP, without seeking,
  * and without a single blur if the device cannot afford one.
+ *
+ * The product stays fully visible here: reduced motion means less movement, not
+ * less product.
  */
 export function ReducedMotionFallback({ background }: FallbackProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -57,7 +66,7 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
             src={assets.poster}
             alt=""
             fill
-            priority
+            preload
             sizes="100vw"
             className="object-cover"
           />
@@ -66,20 +75,12 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
       </div>
 
       <section className="flex min-h-[92vh] flex-col items-center justify-center px-6 text-center">
-        <Image
-          src={assets.logo}
-          alt={brand.logoAlt}
-          width={170}
-          height={50}
-          priority
-          className="h-12 w-auto"
-        />
-        <h1 className="mt-10 max-w-3xl font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-6xl md:text-7xl">
+        <p className="font-mono text-[0.7rem] tracking-[0.4em] text-glacier-300 uppercase">
+          {product.descriptor}
+        </p>
+        <h1 className="mt-8 max-w-3xl font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-6xl md:text-7xl">
           {opening.headline}
         </h1>
-        <p className="mt-6 text-sm tracking-[0.3em] text-silver-dim uppercase">
-          {brand.tagline}
-        </p>
       </section>
 
       <section className="mx-auto max-w-3xl px-6 py-20 md:py-28">
@@ -94,68 +95,114 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
         </p>
       </section>
 
-      <section className="mx-auto max-w-4xl px-6 py-20 md:py-28">
+      <section className="mx-auto max-w-3xl px-6 py-20 md:py-28">
         <p className="text-[0.7rem] font-medium tracking-[0.35em] text-glacier-300 uppercase">
-          {journey.eyebrow}
+          {origin.eyebrow}
         </p>
         <h2 className="mt-4 font-display text-4xl leading-tight font-light text-balance text-ice md:text-5xl">
-          {journey.heading}
+          {origin.heading}
         </h2>
-        <ul className="mt-10 grid gap-8 sm:grid-cols-3">
-          {journey.highlights.map((highlight) => (
-            <li key={highlight.title}>
-              <h3 className="text-base font-medium text-ice">{highlight.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-pretty text-silver">
-                {highlight.description}
-              </p>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-6 text-base leading-relaxed text-pretty text-silver md:text-lg">
+          {origin.body}
+        </p>
+      </section>
+
+      <section className="mx-auto max-w-3xl px-6 py-20 md:py-28">
+        <p className="text-[0.7rem] font-medium tracking-[0.35em] text-glacier-300 uppercase">
+          {descent.eyebrow}
+        </p>
+        <h2 className="mt-4 font-display text-4xl leading-tight font-light text-balance text-ice md:text-5xl">
+          {descent.heading}
+        </h2>
+        <p className="mt-6 text-base leading-relaxed text-pretty text-silver md:text-lg">
+          {descent.body}
+        </p>
       </section>
 
       <section className="mx-auto flex max-w-5xl flex-col items-center gap-10 px-6 py-20 md:flex-row md:gap-16 md:py-28">
-        <div className="relative h-[42vh] w-full max-w-[260px] shrink-0">
+        <div
+          className="relative h-[48vh] w-auto shrink-0"
+          style={{ aspectRatio: `${deviceImage.width} / ${deviceImage.height}` }}
+        >
           <Image
-            src={assets.product}
-            alt={`${brand.name} ${product.name} bottle, front view`}
+            src={assets.device}
+            alt={device.imageAlt}
             fill
-            sizes="(max-width: 768px) 60vw, 260px"
+            sizes="(max-width: 768px) 45vw, 240px"
             className="object-contain"
           />
         </div>
+
         <div className="text-center md:text-left">
           <p className="text-[0.7rem] font-medium tracking-[0.35em] text-glacier-300 uppercase">
-            {product.eyebrow}
+            {device.intro.eyebrow}
           </p>
           <h2 className="mt-4 font-display text-4xl leading-tight font-light text-balance text-ice md:text-5xl">
-            {product.name}
+            {device.intro.heading}
           </h2>
           <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
-            {product.description}
+            {device.intro.body}
           </p>
-          <p className="mt-6 inline-block rounded-full border border-glacier-500/40 bg-glacier-500/10 px-4 py-2 text-[0.68rem] font-medium tracking-[0.28em] text-glacier-100 uppercase">
-            {product.badge}
+
+          <h3 className="mt-10 font-display text-2xl leading-tight font-light text-balance text-ice md:text-3xl">
+            {device.conversion.heading}
+          </h3>
+          <p className="mt-4 text-base leading-relaxed text-pretty text-silver md:text-lg">
+            {device.conversion.body}
           </p>
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-6 py-20 md:py-28">
-        <ul className="grid gap-6 md:grid-cols-3">
-          {benefits.map((benefit) => (
-            <li
-              key={benefit.id}
-              className="rounded-2xl border border-white/15 bg-navy-900/70 p-7"
-            >
-              <h3 className="font-display text-2xl leading-tight font-light text-balance text-ice">
-                {benefit.title}
-              </h3>
-              <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
-                {benefit.description}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* The stones, as a plain list. Empty until the verified list exists. */}
+      {activeDeviceElements.length > 0 && (
+        <section className="mx-auto max-w-4xl px-6 py-20 md:py-28">
+          <ul className="grid gap-6 md:grid-cols-3">
+            {activeDeviceElements.map((element) => (
+              <li
+                key={element.id}
+                className="rounded-2xl border border-white/15 bg-navy-900/70 p-7"
+              >
+                <h3 className="font-mono text-[0.65rem] tracking-[0.3em] text-glacier-300 uppercase">
+                  {element.name}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
+                  {element.shortDescription}
+                </p>
+                {element.verifiedFunction && (
+                  <p className="mt-2 text-sm leading-relaxed text-pretty text-ice">
+                    {element.verifiedFunction}
+                  </p>
+                )}
+                {element.evidenceNote && (
+                  <p className="mt-2 text-[0.7rem] leading-relaxed text-silver-dim">
+                    {element.evidenceNote}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {benefits.length > 0 && (
+        <section className="mx-auto max-w-4xl px-6 py-20 md:py-28">
+          <ul className="grid gap-6 md:grid-cols-3">
+            {benefits.map((benefit) => (
+              <li
+                key={benefit.id}
+                className="rounded-2xl border border-white/15 bg-navy-900/70 p-7"
+              >
+                <h3 className="font-display text-2xl leading-tight font-light text-balance text-ice">
+                  {benefit.title}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
+                  {benefit.description}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <FinalCTA variant="static" />
     </main>

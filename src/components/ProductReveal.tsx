@@ -1,92 +1,236 @@
 "use client";
 
 import Image from "next/image";
-import type { Ref } from "react";
-import { assets, brand, scenes } from "@/config/content";
+import type { Ref, RefObject } from "react";
+import { DeviceCallout } from "@/components/DeviceCallout";
+import {
+  activeDeviceElements,
+  assets,
+  deviceImage,
+  scenes,
+} from "@/config/content";
 
 type ProductRevealProps = {
   /** The whole scene layer — the timeline fades this in and out. */
   ref?: Ref<HTMLDivElement>;
-  /** The bottle itself — scaled, blurred and lifted independently. */
-  imageRef?: Ref<HTMLDivElement>;
-  /** The glow behind the bottle. */
+  /** The device itself: scaled, lifted and tilted independently. */
+  deviceRef?: Ref<HTMLDivElement>;
+  /** Darkens the glacier behind the device so it reads against bright ice. */
+  backdropRef?: Ref<HTMLDivElement>;
+  /** Glacier-blue bloom behind the device. */
   glowRef?: Ref<HTMLDivElement>;
+  /** The bar of light that travels across the device. */
+  sweepRef?: Ref<HTMLDivElement>;
+  /** Drifting mist. Desktop only. */
+  mistRef?: Ref<HTMLDivElement>;
+  /** Ground reflection. Desktop only. */
+  reflectionRef?: Ref<HTMLDivElement>;
+  /** Copy block one — what the device is. */
+  introRef?: Ref<HTMLDivElement>;
+  /** Copy block two — the stones inside it. */
+  conversionRef?: Ref<HTMLDivElement>;
+  /** One entry per configured device element. */
+  calloutRefs?: RefObject<(HTMLDivElement | null)[]>;
 };
 
-const { product } = scenes;
+const { device } = scenes;
+
+/** The device render's own aspect ratio — a tall, narrow cylinder. */
+const DEVICE_ASPECT = `${deviceImage.width} / ${deviceImage.height}`;
 
 /**
- * Scene 4. On desktop the bottle sits to the right so the glacier face — the
- * most interesting part of the frame — stays uncovered.
+ * Scene 5 — the device.
+ *
+ * A 2.5D reveal built from the single supplied PNG. The device is the only thing
+ * that moves in depth: it rises, settles and drifts, while the glow, the sweep,
+ * the reflection and the mist sit on their own layers behind and in front of it.
+ * Everything here is animated by GlacierExperience through the refs above; this
+ * file only decides where things are.
+ *
+ * The box is locked to the render's real aspect ratio, so `object-contain` fills
+ * it exactly — the device can never stretch, and nothing shifts as it loads.
+ *
+ * Deliberately NOT a full turntable: one flat PNG has no back and no sides, so
+ * the tilt stays within a few degrees. A real rotation needs a GLB, an image
+ * sequence, or a pre-rendered rotation video.
  */
-export function ProductReveal({ ref, imageRef, glowRef }: ProductRevealProps) {
+export function ProductReveal({
+  ref,
+  deviceRef,
+  backdropRef,
+  glowRef,
+  sweepRef,
+  mistRef,
+  reflectionRef,
+  introRef,
+  conversionRef,
+  calloutRefs,
+}: ProductRevealProps) {
+  const hasCallouts = activeDeviceElements.length > 0;
+
   return (
     <div
       ref={ref}
-      className="scene-layer pointer-events-none absolute inset-0 flex items-center justify-center px-6 md:justify-end md:px-16 lg:px-24"
+      data-scene="device"
+      className="scene-layer pointer-events-none absolute inset-0"
     >
-      <div className="flex w-full max-w-6xl flex-col items-center gap-8 md:flex-row-reverse md:justify-between md:gap-12">
-        {/* Bottle */}
-        <div className="relative flex shrink-0 flex-col items-center">
-          <div
-            ref={glowRef}
-            aria-hidden="true"
-            className="absolute top-1/2 left-1/2 -z-10 h-[130%] w-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(111,191,230,0.38)_0%,rgba(111,191,230,0.12)_38%,transparent_70%)] blur-2xl"
-          />
-          <div
-            ref={imageRef}
-            className="relative h-[34vh] w-[44vw] max-w-[200px] md:h-[56vh] md:w-[26vw] md:max-w-[350px] md:min-w-[200px]"
-          >
-            <Image
-              src={assets.product}
-              alt={`${brand.name} ${product.name} bottle, front view`}
-              fill
-              // The bottle is the payoff of the whole scroll and is reused by
-              // scene 6, so it is worth fetching up front rather than mid-scrub.
-              priority
-              sizes="(max-width: 768px) 44vw, 26vw"
-              className="object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.55)]"
-            />
-          </div>
+      {/* Contrast bed. The device is mid-tone copper and the video ends on bright
+          ice, so without this it has nothing to sit against. */}
+      <div
+        ref={backdropRef}
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_55%,rgba(6,19,33,0.62)_0%,rgba(6,19,33,0.9)_100%)]"
+      />
 
-          {/* Reflection — pure decoration, desktop only. */}
-          <div
-            aria-hidden="true"
-            className="relative hidden h-[13vh] w-[26vw] max-w-[350px] min-w-[200px] opacity-25 md:block"
-            style={{
-              maskImage: "linear-gradient(to bottom, black 0%, transparent 85%)",
-              WebkitMaskImage:
-                "linear-gradient(to bottom, black 0%, transparent 85%)",
-            }}
-          >
-            <Image
-              src={assets.product}
-              alt=""
-              fill
-              sizes="26vw"
-              className="scale-y-[-1] object-contain object-top blur-[2px]"
-            />
-          </div>
-        </div>
+      <div className="relative flex h-full w-full items-center justify-center px-6 md:px-10 lg:px-16">
+        <div className="grid w-full max-w-6xl items-center gap-y-8 md:grid-cols-[auto_1fr] md:gap-x-14 lg:grid-cols-[1fr_auto_1fr] lg:gap-x-8">
+          {/* Empty gutter the callouts overhang into. Only exists at lg, where
+              there is finally room for a connector line and a text column. */}
+          <div aria-hidden="true" className="hidden lg:block" />
 
-        {/* Copy */}
-        <div className="max-w-md text-center md:text-left">
-          <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
-            {product.eyebrow}
-          </p>
-          <h2 className="mt-4 font-display text-4xl leading-[1.05] font-light text-balance text-ice md:text-6xl">
-            {product.name}
-          </h2>
-          <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
-            {product.description}
-          </p>
-          <p className="mt-7 inline-flex items-center gap-2 rounded-full border border-glacier-500/40 bg-glacier-500/10 px-4 py-2 font-mono text-[0.68rem] tracking-[0.28em] text-glacier-100 uppercase">
-            <span
+          {/* ---------------------------- Device ---------------------------- */}
+          {/* `isolate` keeps the mist's negative z-index inside this column.
+              Without it the mist would sit behind the darkening backdrop above
+              and never be seen. */}
+          <div className="relative isolate mx-auto flex flex-col items-center">
+            {/* 3D context. Perspective must live on the parent, not on the
+                element being rotated, or the tilt reads as a flat skew. */}
+            <div
+              className="relative"
+              style={{ perspective: "1400px", perspectiveOrigin: "50% 45%" }}
+            >
+              <div
+                ref={deviceRef}
+                data-device-img
+                className="relative h-[36vh] md:h-[58vh] lg:h-[62vh]"
+                style={{ aspectRatio: DEVICE_ASPECT, transformStyle: "preserve-3d" }}
+              >
+                {/* Bloom behind the device. */}
+                <div
+                  ref={glowRef}
+                  aria-hidden="true"
+                  className="absolute top-1/2 left-1/2 -z-10 h-[112%] w-[420%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(111,191,230,0.32)_0%,rgba(111,191,230,0.1)_40%,transparent_72%)] blur-lg md:blur-2xl"
+                />
+
+                <Image
+                  src={assets.device}
+                  alt={device.imageAlt}
+                  fill
+                  // The payoff of the whole scroll, and reused by the CTA. Fetch
+                  // it up front rather than mid-scrub — but as `eager`, not
+                  // `preload`: the poster is the LCP element and should keep the
+                  // one preload slot.
+                  loading="eager"
+                  fetchPriority="high"
+                  sizes="(max-width: 768px) 45vw, 280px"
+                  className="object-contain drop-shadow-[0_30px_55px_rgba(0,0,0,0.6)]"
+                />
+
+                {/* Light sweep. The mask is an alpha silhouette of the very same
+                    render, so the bar of light is clipped to the device and
+                    travels across the copper instead of across a rectangle. */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 overflow-hidden"
+                  style={{
+                    maskImage: `url(${assets.deviceMask})`,
+                    WebkitMaskImage: `url(${assets.deviceMask})`,
+                    maskSize: "contain",
+                    WebkitMaskSize: "contain",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskPosition: "center",
+                    WebkitMaskPosition: "center",
+                  }}
+                >
+                  <div
+                    ref={sweepRef}
+                    className="absolute inset-y-0 left-0 w-[65%] -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent md:blur-[3px]"
+                  />
+                </div>
+
+                {/* Callouts are anchored inside the device box, so an element's
+                    `anchor` is a percentage of the device itself. */}
+                {hasCallouts &&
+                  activeDeviceElements.map((element, index) => (
+                    <DeviceCallout
+                      key={element.id}
+                      ref={(node) => {
+                        if (calloutRefs) calloutRefs.current[index] = node;
+                      }}
+                      element={element}
+                    />
+                  ))}
+              </div>
+
+              {/* Ground reflection. Pure decoration and the cheapest thing to
+                  drop, so it is desktop-only. */}
+              <div
+                ref={reflectionRef}
+                aria-hidden="true"
+                className="relative hidden h-[16vh] w-full opacity-0 md:block"
+                style={{
+                  maskImage: "linear-gradient(to bottom, black 0%, transparent 82%)",
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, black 0%, transparent 82%)",
+                }}
+              >
+                <Image
+                  src={assets.device}
+                  alt=""
+                  fill
+                  sizes="280px"
+                  className="scale-y-[-1] object-contain object-top blur-[3px]"
+                />
+              </div>
+            </div>
+
+            {/* Mist. Two soft banks, moved by the timeline rather than by a CSS
+                loop, so they cost nothing while the scene is off screen. */}
+            <div
+              ref={mistRef}
               aria-hidden="true"
-              className="h-1.5 w-1.5 rounded-full bg-glacier-300"
-            />
-            {product.badge}
-          </p>
+              className="pointer-events-none absolute inset-x-[-60%] bottom-[6%] -z-10 hidden h-[38%] opacity-0 md:block"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(220,239,250,0.16)_0%,transparent_65%)] blur-2xl" />
+              <div className="absolute inset-x-[12%] bottom-0 h-[70%] bg-[radial-gradient(ellipse_at_center,rgba(159,212,240,0.14)_0%,transparent_60%)] blur-xl" />
+            </div>
+          </div>
+
+          {/* ----------------------------- Copy ----------------------------- */}
+          {/* Both blocks share one grid cell, so the cell is as tall as the
+              taller of the two and the cross-fade shifts nothing. */}
+          <div className="grid text-center md:text-left">
+            <div
+              ref={introRef}
+              className="scene-layer col-start-1 row-start-1 max-w-md md:max-w-sm lg:max-w-md"
+            >
+              <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
+                {device.intro.eyebrow}
+              </p>
+              <h2 className="mt-4 font-display text-3xl leading-[1.05] font-light text-balance text-ice md:text-5xl lg:text-6xl">
+                {device.intro.heading}
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
+                {device.intro.body}
+              </p>
+            </div>
+
+            <div
+              ref={conversionRef}
+              className="scene-layer col-start-1 row-start-1 max-w-md md:max-w-sm lg:max-w-md"
+            >
+              <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
+                {device.conversion.eyebrow}
+              </p>
+              <h2 className="mt-4 font-display text-3xl leading-[1.05] font-light text-balance text-ice md:text-5xl lg:text-6xl">
+                {device.conversion.heading}
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
+                {device.conversion.body}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

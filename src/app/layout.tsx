@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Geist } from "next/font/google";
-import { assets, brand, scenes, seo } from "@/config/content";
+import { assets, brand, product, scenes, seo, siteName } from "@/config/content";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,21 +16,27 @@ const display = Cormorant_Garamond({
   display: "swap",
 });
 
+/**
+ * Falls back to localhost rather than to an invented domain: a placeholder like
+ * "example.com" would be published in every canonical and Open Graph tag.
+ * Set NEXT_PUBLIC_SITE_URL and the real one flows through automatically.
+ */
+const metadataBase = new URL(seo.siteUrl ?? "http://localhost:3000");
+
 export const metadata: Metadata = {
-  metadataBase: new URL(seo.siteUrl),
+  metadataBase,
   title: {
     default: seo.title,
-    template: `%s — ${brand.name}`,
+    template: `%s — ${siteName}`,
   },
   description: seo.description,
   keywords: [...seo.keywords],
-  applicationName: brand.name,
-  authors: [{ name: brand.name }],
+  applicationName: siteName,
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    url: seo.siteUrl,
-    siteName: brand.name,
+    url: "/",
+    siteName,
     title: seo.title,
     description: seo.description,
     images: [
@@ -38,7 +44,7 @@ export const metadata: Metadata = {
         url: assets.poster,
         width: 1920,
         height: 1080,
-        alt: "A Himalayan glacier valley, the source of Himalaya Sparsh mineral water",
+        alt: "A Himalayan glacier valley",
       },
     ],
   },
@@ -48,10 +54,8 @@ export const metadata: Metadata = {
     description: seo.description,
     images: [assets.poster],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  // Nothing is indexable until the real domain exists.
+  robots: seo.siteUrl ? { index: true, follow: true } : { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
@@ -61,13 +65,18 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * Structured data describes the device and nothing else. No `offers` block until
+ * there is a real price and a real buy URL, and no `brand` until the brand name
+ * is confirmed — a wrong one here would be republished by every crawler.
+ */
 const productJsonLd = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: scenes.cta.name,
-  brand: { "@type": "Brand", name: brand.name },
-  description: scenes.product.description,
-  image: [assets.product],
+  name: product.name,
+  description: scenes.device.intro.body,
+  image: [new URL(assets.device, metadataBase).toString()],
+  ...(brand.name ? { brand: { "@type": "Brand", name: brand.name } } : {}),
 };
 
 export default function RootLayout({

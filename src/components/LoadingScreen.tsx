@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { assets, brand } from "@/config/content";
+import { product } from "@/config/content";
 
 type LoadingScreenProps = {
   /** 0–100. */
@@ -24,14 +23,11 @@ export function LoadingScreen({ progress, hidden }: LoadingScreenProps) {
       aria-live="polite"
       aria-busy={!hidden}
     >
-      <Image
-        src={assets.logo}
-        alt={brand.logoAlt}
-        width={150}
-        height={44}
-        priority
-        className="h-11 w-auto opacity-90"
-      />
+      {/* No logo: the only wordmark we have still reads "Himalaya Sparsh",
+          which is not the confirmed brand. */}
+      <p className="font-mono text-[0.7rem] tracking-[0.4em] text-glacier-300 uppercase">
+        {product.descriptor}
+      </p>
 
       <div className="flex w-56 flex-col gap-3">
         <div
@@ -40,7 +36,7 @@ export function LoadingScreen({ progress, hidden }: LoadingScreenProps) {
           aria-valuenow={clamped}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label="Loading the glacier experience"
+          aria-label="Loading the Himalayan journey"
         >
           <div
             className="h-full bg-glacier-300 transition-[width] duration-300 ease-out"

@@ -2,7 +2,6 @@
 
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BenefitCard } from "@/components/BenefitCard";
 import { FinalCTA } from "@/components/FinalCTA";
@@ -11,14 +10,22 @@ import { ProductReveal } from "@/components/ProductReveal";
 import { ReducedMotionFallback } from "@/components/ReducedMotionFallback";
 import { ScrollVideo } from "@/components/ScrollVideo";
 import { StoryOverlay } from "@/components/StoryOverlay";
-import { assets, brand, scenes, type ScrollRange } from "@/config/content";
+import {
+  activeDeviceElements,
+  assets,
+  hasPurchaseAction,
+  product,
+  scenes,
+  siteName,
+  type ScrollRange,
+} from "@/config/content";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const { opening, source, journey, product, benefits, cta } = scenes;
+const { opening, source, origin, descent, device, benefits, cta } = scenes;
 
 /** Give up on the video after this long and fall back to the poster. */
 const METADATA_TIMEOUT_MS = 15_000;
@@ -104,10 +111,21 @@ export function GlacierExperience() {
 
   const openingRef = useRef<HTMLDivElement>(null);
   const sourceRef = useRef<HTMLDivElement>(null);
-  const journeyRef = useRef<HTMLDivElement>(null);
-  const productRef = useRef<HTMLDivElement>(null);
-  const productImageRef = useRef<HTMLDivElement>(null);
-  const productGlowRef = useRef<HTMLDivElement>(null);
+  const originRef = useRef<HTMLDivElement>(null);
+  const descentRef = useRef<HTMLDivElement>(null);
+
+  // Scene 5 — the device and everything layered around it.
+  const deviceLayerRef = useRef<HTMLDivElement>(null);
+  const deviceRef = useRef<HTMLDivElement>(null);
+  const deviceBackdropRef = useRef<HTMLDivElement>(null);
+  const deviceGlowRef = useRef<HTMLDivElement>(null);
+  const deviceSweepRef = useRef<HTMLDivElement>(null);
+  const deviceMistRef = useRef<HTMLDivElement>(null);
+  const deviceReflectionRef = useRef<HTMLDivElement>(null);
+  const deviceIntroRef = useRef<HTMLDivElement>(null);
+  const deviceConversionRef = useRef<HTMLDivElement>(null);
+  const calloutRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const benefitRefs = useRef<(HTMLDivElement | null)[]>([]);
   const ctaRef = useRef<HTMLElement>(null);
 
@@ -272,54 +290,201 @@ export function GlacierExperience() {
 
         reveal(timeline, openingRef.current, opening.range, { blur, exitY: 40 });
         reveal(timeline, sourceRef.current, source.range, { blur });
-        reveal(timeline, journeyRef.current, journey.range, { blur });
+        reveal(timeline, originRef.current, origin.range, { blur });
+        reveal(timeline, descentRef.current, descent.range, { blur });
 
-        // Scene 4: the layer only fades; the bottle does the real work.
-        reveal(timeline, productRef.current, product.range, {
+        /* ---------------------------------------------------------------- *
+         * Scene 5 — the device.
+         *
+         * The layer itself only fades. Everything that reads as depth is a
+         * separate transform on a separate element, so the browser can hand the
+         * whole scene to the compositor: nothing here animates a layout
+         * property, and nothing here runs when the scene is off screen.
+         * ---------------------------------------------------------------- */
+        reveal(timeline, deviceLayerRef.current, device.range, {
           blur: 0,
           y: 0,
           scale: 1,
-          exitY: 20,
+          exitY: 24,
         });
 
-        const productDuration = product.range.inEnd - product.range.inStart;
+        const enterAt = device.range.inStart;
+        const settledAt = device.range.inEnd;
+        const enterDuration = settledAt - enterAt;
+        const holdDuration = device.range.outStart - settledAt;
+        const exitDuration = device.range.outEnd - device.range.outStart;
 
-        if (productImageRef.current) {
+        if (deviceBackdropRef.current) {
           timeline.fromTo(
-            productImageRef.current,
+            deviceBackdropRef.current,
+            { autoAlpha: 0 },
             {
-              autoAlpha: 0.2,
-              scale: 0.75,
-              y: isDesktop ? 80 : 50,
-              ...(blur > 0 ? { filter: "blur(14px)" } : {}),
+              autoAlpha: 1,
+              duration: enterDuration * 0.7,
+              ease: "power1.out",
+            },
+            enterAt,
+          );
+        }
+
+        if (deviceRef.current) {
+          // Rises, settles, and turns a few degrees. A flat PNG has no back and
+          // no sides, so the tilt is kept small enough that it reads as parallax
+          // rather than as rotation — a real turntable needs real geometry.
+          timeline.fromTo(
+            deviceRef.current,
+            {
+              autoAlpha: 0.15,
+              scale: 0.78,
+              y: isDesktop ? 90 : 56,
+              rotateX: 9,
+              rotateY: -3,
+              ...(blur > 0 ? { filter: "blur(16px)" } : {}),
             },
             {
               autoAlpha: 1,
               scale: 1,
               y: 0,
+              rotateX: 0,
+              rotateY: -1.2,
               ...(blur > 0 ? { filter: "blur(0px)" } : {}),
-              duration: productDuration,
+              duration: enterDuration,
               ease: "power2.out",
             },
-            product.range.inStart,
+            enterAt,
+          );
+
+          // The hold: a slow drift against the still-moving glacier behind it.
+          // This is the parallax, and the only motion while the copy changes.
+          timeline.to(
+            deviceRef.current,
+            {
+              y: isDesktop ? -26 : -14,
+              rotateY: 2.4,
+              scale: 1.03,
+              duration: holdDuration,
+              ease: "none",
+            },
+            settledAt,
+          );
+
+          timeline.to(
+            deviceRef.current,
+            { scale: 0.985, duration: exitDuration, ease: "power2.in" },
+            device.range.outStart,
           );
         }
 
-        if (productGlowRef.current) {
+        if (deviceGlowRef.current) {
           timeline.fromTo(
-            productGlowRef.current,
-            { autoAlpha: 0, scale: 0.65 },
+            deviceGlowRef.current,
+            { autoAlpha: 0, scale: 0.7 },
             {
               autoAlpha: 1,
               scale: 1,
-              duration: productDuration,
+              duration: enterDuration * 0.8,
               ease: "power1.out",
             },
-            product.range.inStart + 2,
+            enterAt + 2,
           );
         }
 
-        // Scene 5: one card at a time.
+        if (deviceSweepRef.current) {
+          // One pass of light across the copper as it settles. The bar is masked
+          // to the device's own silhouette, and clipped, so it needs no fade —
+          // off the edge of the device is simply off.
+          timeline.set(deviceSweepRef.current, { autoAlpha: 1 }, enterAt);
+          timeline.fromTo(
+            deviceSweepRef.current,
+            { xPercent: -160 },
+            {
+              xPercent: 200,
+              duration: enterDuration + 2,
+              ease: "none",
+            },
+            enterAt + 2,
+          );
+        }
+
+        // Reflection and mist are the two cheapest things to lose, so a phone
+        // never renders them at all.
+        if (isDesktop && deviceReflectionRef.current) {
+          timeline.fromTo(
+            deviceReflectionRef.current,
+            { autoAlpha: 0, y: -16 },
+            {
+              autoAlpha: 0.22,
+              y: 0,
+              duration: enterDuration * 0.7,
+              ease: "power1.out",
+            },
+            enterAt + 3,
+          );
+        }
+
+        if (isDesktop && deviceMistRef.current) {
+          timeline.fromTo(
+            deviceMistRef.current,
+            { autoAlpha: 0, y: 24 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: enterDuration * 0.8,
+              ease: "power1.out",
+            },
+            enterAt + 2,
+          );
+          timeline.to(
+            deviceMistRef.current,
+            { y: -30, autoAlpha: 0.5, duration: holdDuration, ease: "none" },
+            settledAt,
+          );
+        }
+
+        // The two copy blocks cross-fade in a shared grid cell beside the device.
+        reveal(timeline, deviceIntroRef.current, device.intro.range, {
+          blur: blur > 0 ? 6 : 0,
+          y: 26,
+          exitY: 20,
+        });
+
+        // On a phone the callouts sit *below* the device, which is exactly where
+        // the conversion copy is. When stones are configured, pull that copy out
+        // before the first one arrives so the two never share the space.
+        const firstCallout = activeDeviceElements[0];
+        const conversionRange: ScrollRange =
+          !isDesktop && firstCallout
+            ? {
+                ...device.conversion.range,
+                outStart: firstCallout.scrollRange.start - 3,
+                outEnd: firstCallout.scrollRange.start,
+              }
+            : device.conversion.range;
+
+        reveal(timeline, deviceConversionRef.current, conversionRange, {
+          blur: blur > 0 ? 6 : 0,
+          y: 26,
+          exitY: 20,
+        });
+
+        // Stone callouts: one at a time, each inside its own window. Empty until
+        // the client's verified list lands in content.ts.
+        activeDeviceElements.forEach((element, index) => {
+          const node = calloutRefs.current[index];
+          if (!node) return;
+
+          const { start, end } = element.scrollRange;
+          const fade = Math.min(2, (end - start) / 3);
+
+          reveal(
+            timeline,
+            node,
+            { inStart: start, inEnd: start + fade, outStart: end - fade, outEnd: end },
+            { blur: 0, y: 14, exitY: 12, scale: 1 },
+          );
+        });
+
+        // Scene 6: one card at a time. Empty until the benefits are verified.
         benefits.forEach((benefit, index) => {
           reveal(timeline, benefitRefs.current[index], benefit.range, {
             blur: blur > 0 ? 8 : 0,
@@ -328,7 +493,7 @@ export function GlacierExperience() {
           });
         });
 
-        // Scene 6: fades in and stays — it is the last thing on the page.
+        // Scene 7: fades in and stays — it is the last thing on the page.
         reveal(timeline, ctaRef.current, cta.range, { blur: 0, y: 30, exitY: 0 });
 
         // Hold the timeline open to exactly 100 units so one unit is one percent
@@ -442,10 +607,16 @@ export function GlacierExperience() {
     return () => window.clearTimeout(timer);
   }, [status]);
 
-  /** Keyboard users should not have to scroll 600vh to reach the buy button. */
-  const skipToPurchase = useCallback(() => {
+  /** Keyboard users should not have to scroll 600vh to reach the end. */
+  const skipToEnd = useCallback(() => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: "auto" });
-    window.setTimeout(() => document.getElementById("buy-now")?.focus(), 150);
+    window.setTimeout(() => {
+      // The buy button only exists once a buy URL is configured; the section
+      // itself is always there and is focusable, so it is the reliable target.
+      const target =
+        document.getElementById("buy-now") ?? document.getElementById("purchase");
+      target?.focus();
+    }, 150);
   }, []);
 
   if (mode === "reduced") return <ReducedMotionFallback background="poster" />;
@@ -460,15 +631,15 @@ export function GlacierExperience() {
 
       <button
         type="button"
-        onClick={skipToPurchase}
+        onClick={skipToEnd}
         className="sr-only rounded-full bg-ice px-5 py-3 text-sm font-medium text-navy-900 focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
       >
-        Skip to purchase options
+        {hasPurchaseAction ? "Skip to purchase options" : "Skip to the end"}
       </button>
 
       <main>
         <h1 className="sr-only">
-          {brand.name} — {opening.headline}
+          {siteName} — {opening.headline}
         </h1>
 
         <section
@@ -480,21 +651,21 @@ export function GlacierExperience() {
               low-power visitor never starts downloading the video at all. */}
           {mode === "scrub" && <ScrollVideo videoRef={videoRef} />}
 
-          {/* Scene 1 — 0% to 15% */}
+          {/* Scene 1 — the summit. */}
           <StoryOverlay ref={openingRef}>
             <div className="flex flex-col items-center">
-              <Image
-                data-intro
-                src={assets.logo}
-                alt={brand.logoAlt}
-                width={170}
-                height={50}
-                priority
-                className="h-10 w-auto md:h-12"
-              />
+              {/* No logo: the only wordmark we have still reads "Himalaya
+                  Sparsh", which is not the confirmed brand. The descriptor is
+                  accurate and says what the product actually is. */}
               <p
                 data-intro
-                className="mt-10 max-w-3xl font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-6xl md:text-7xl"
+                className="font-mono text-[0.7rem] tracking-[0.4em] text-glacier-300 uppercase"
+              >
+                {product.descriptor}
+              </p>
+              <p
+                data-intro
+                className="mt-8 max-w-3xl font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-6xl md:text-7xl"
               >
                 {opening.headline}
               </p>
@@ -514,7 +685,7 @@ export function GlacierExperience() {
             </div>
           </StoryOverlay>
 
-          {/* Scene 2 — 15% to 35% */}
+          {/* Scene 2 — the glacier and the water source. */}
           <StoryOverlay ref={sourceRef}>
             <div className="max-w-2xl">
               <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
@@ -529,41 +700,51 @@ export function GlacierExperience() {
             </div>
           </StoryOverlay>
 
-          {/* Scene 3 — 35% to 55% */}
-          <StoryOverlay ref={journeyRef}>
-            <div className="max-w-3xl">
+          {/* Scene 3 — Gonbo Rangjon. */}
+          <StoryOverlay ref={originRef}>
+            <div className="max-w-2xl">
               <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
-                {journey.eyebrow}
+                {origin.eyebrow}
               </p>
-              <h2 className="mt-5 font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-5xl md:text-7xl">
-                {journey.heading}
+              <h2 className="mt-5 font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-5xl md:text-6xl">
+                {origin.heading}
               </h2>
-              <ul className="mt-12 grid gap-8 text-left sm:grid-cols-3 sm:gap-10">
-                {journey.highlights.map((highlight, index) => (
-                  <li key={highlight.title}>
-                    <p className="font-mono text-[0.65rem] tracking-[0.3em] text-glacier-500/80">
-                      {String(index + 1).padStart(2, "0")}
-                    </p>
-                    <h3 className="mt-3 text-base font-medium text-ice">
-                      {highlight.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-pretty text-silver">
-                      {highlight.description}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-pretty text-silver md:text-lg">
+                {origin.body}
+              </p>
             </div>
           </StoryOverlay>
 
-          {/* Scene 4 — 55% to 75% */}
+          {/* Scene 4 — the water turns toward the device. */}
+          <StoryOverlay ref={descentRef}>
+            <div className="max-w-2xl">
+              <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
+                {descent.eyebrow}
+              </p>
+              <h2 className="mt-5 font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-5xl md:text-6xl">
+                {descent.heading}
+              </h2>
+              <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-pretty text-silver md:text-lg">
+                {descent.body}
+              </p>
+            </div>
+          </StoryOverlay>
+
+          {/* Scene 5 — the device. */}
           <ProductReveal
-            ref={productRef}
-            imageRef={productImageRef}
-            glowRef={productGlowRef}
+            ref={deviceLayerRef}
+            deviceRef={deviceRef}
+            backdropRef={deviceBackdropRef}
+            glowRef={deviceGlowRef}
+            sweepRef={deviceSweepRef}
+            mistRef={deviceMistRef}
+            reflectionRef={deviceReflectionRef}
+            introRef={deviceIntroRef}
+            conversionRef={deviceConversionRef}
+            calloutRefs={calloutRefs}
           />
 
-          {/* Scene 5 — 75% to 92% */}
+          {/* Scene 6 — benefits. Renders nothing until they are verified. */}
           {benefits.map((benefit, index) => (
             <BenefitCard
               key={benefit.id}
@@ -576,7 +757,7 @@ export function GlacierExperience() {
             />
           ))}
 
-          {/* Scene 6 — 92% to 100% */}
+          {/* Scene 7 — enquiry / purchase. */}
           <FinalCTA ref={ctaRef} variant="overlay" />
         </section>
       </main>
