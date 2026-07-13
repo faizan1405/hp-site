@@ -1,6 +1,7 @@
 /**
- * Single source of truth for every piece of copy, every asset path and every
- * commercial detail on the site. Components read from here and nowhere else.
+ * Single source of truth for every piece of copy, every asset path, every scroll
+ * range and every commercial detail on the site. Components read from here and
+ * nowhere else.
  *
  * ---------------------------------------------------------------------------
  * THE NULL RULE
@@ -13,53 +14,240 @@
  *
  * Nothing on this site may state or imply a medical, mineral, pH, purification
  * or certification claim until the client supplies evidence for it. The copy
- * below is deliberately descriptive rather than functional for that reason.
+ * below is deliberately descriptive rather than functional for that reason: it
+ * says what each material IS and WHERE it sits, and never what it does.
  */
 
 export type ScrollRange = {
-  /** Timeline position (0–100) where the element starts fading in. */
+  /** Timeline position where the element starts fading in. */
   inStart: number;
-  /** Timeline position (0–100) where the element is fully visible. */
+  /** Timeline position where the element is fully visible. */
   inEnd: number;
-  /** Timeline position (0–100) where the element starts fading out. */
+  /** Timeline position where the element starts fading out. */
   outStart: number;
-  /** Timeline position (0–100) where the element is fully hidden. */
+  /** Timeline position where the element is fully hidden. */
   outEnd: number;
 };
+
+/* ========================================================================== *
+ * THE TIMELINE
+ *
+ * One timeline unit is one unit of `timelineLength`, and the pinned stage is
+ * exactly `timelineLength` units long — so a range of 55–58 is always the same
+ * slice of the scroll, at every breakpoint, however many benefits exist.
+ *
+ *    0 ──── 38 ─────── 53 ──────────── 85.4 ──── 88 ──── 99 ─── 106
+ *    │ glacier │ device │  layer walk   │ finale │  cta  │
+ *
+ * `timelineLength` grows when verified benefits are added (see BENEFIT_SPAN),
+ * which lengthens the pin by the same proportion. Scroll *speed* therefore
+ * stays constant no matter how much content lands.
+ * ========================================================================== */
+
+/** Timeline position at which the glacier footage reaches its final frame. */
+const GLACIER_END = 38;
+
+/** Where the internal layer walk begins, and how much scroll each layer owns. */
+const LAYER_WALK_START = 53;
+const LAYER_SPAN = 3.6;
+
+/** Where the benefits act begins, and how much scroll one benefit card owns. */
+const BENEFITS_START = 88;
+const BENEFIT_SPAN = 6;
+
+/* -------------------------------------------------------------------------- *
+ * THE STACK INSIDE THE DEVICE
+ *
+ * Names and running order are taken from the manufacturer's own cutaway
+ * diagram. `description` says what a material is and where it sits — nothing
+ * more. `verifiedFunction` is what it *does*, and stays undefined until the
+ * client supplies evidence; DeviceLayerCallout renders it only when it exists,
+ * so filling it in is all that is needed to publish it.
+ *
+ * `anchor` is a point on the cutaway drawing in percent of its box, and must
+ * match the geometry in DeviceCutaway.tsx — both are laid out against
+ * `cutawayViewBox` below, so a change to one has to be a change to the other.
+ * -------------------------------------------------------------------------- */
+
+export type DeviceLayer = {
+  id: string;
+  name: string;
+  /** Descriptive only: what it is, and where in the column it sits. */
+  description: string;
+  /**
+   * What the material does. Rendered verbatim, so it may only be filled in with
+   * wording that is verified AND non-medical. See the withheld-claims note at
+   * the foot of this file.
+   */
+  verifiedFunction?: string;
+  /** Where the above comes from: a lab report, a spec sheet, a supplier. */
+  evidenceNote?: string;
+  /** Point on the cutaway the connector line lands on, in % of its box. */
+  anchor: { x: number; y: number };
+  /** Which side of the cutaway the text sits on (lg and up). */
+  side: "left" | "right";
+  /** Timeline window this layer is the active one. Assigned below. */
+  scrollRange: { start: number; end: number };
+};
+
+/** The cutaway drawing's coordinate space. DeviceCutaway.tsx draws into this. */
+export const cutawayViewBox = { width: 240, height: 880 } as const;
+
+type LayerSpec = Omit<DeviceLayer, "scrollRange">;
+
+/**
+ * Top to bottom, in the order the water meets them. The walk follows this array,
+ * so reordering it reorders the scroll — no other file needs to change.
+ */
+const layerSpecs: LayerSpec[] = [
+  {
+    id: "funnel",
+    name: "Funnel",
+    description:
+      "The opening at the top of the device. Water is poured in here and enters the column below.",
+    anchor: { x: 50, y: 7.5 },
+    side: "right",
+  },
+  {
+    id: "himalayan-stones",
+    name: "Himalayan stones",
+    description:
+      "A bed of stones associated with the Himalayan landscape, and the first material the water meets.",
+    anchor: { x: 50, y: 18.5 },
+    side: "right",
+  },
+  {
+    id: "japanese-stones",
+    name: "Japanese stones",
+    description:
+      "A second stone bed, packed directly beneath the Himalayan layer.",
+    anchor: { x: 50, y: 26 },
+    side: "right",
+  },
+  {
+    id: "jamun-wood",
+    name: "Jamun wood",
+    description:
+      "Jamun wood — the timber of the Indian blackberry tree — filling the chamber at the middle of the column.",
+    anchor: { x: 41.7, y: 34.1 },
+    side: "right",
+  },
+  {
+    id: "silver",
+    name: "Silver",
+    description:
+      "Silver, or chandi, set into the same chamber as the jamun wood.",
+    anchor: { x: 58.3, y: 40.9 },
+    side: "right",
+  },
+  {
+    id: "magnesium",
+    name: "Magnesium",
+    description: "Magnesium, held in the chamber below the wood and the silver.",
+    anchor: { x: 50, y: 49.9 },
+    side: "right",
+  },
+  {
+    id: "magnet",
+    name: "Magnet",
+    description:
+      "A magnet seated across the full width of the column, on the path the water takes downward.",
+    anchor: { x: 50, y: 55.1 },
+    side: "right",
+  },
+  {
+    id: "korean-media",
+    name: "Korean media stones",
+    description:
+      "A packed bed of ceramic media stones — the deepest chamber in the column.",
+    anchor: { x: 50, y: 64.8 },
+    side: "right",
+  },
+  {
+    id: "zinc",
+    name: "Zinc",
+    description:
+      "Zinc. The last material the water passes before it reaches the outlet.",
+    anchor: { x: 50, y: 79.4 },
+    side: "right",
+  },
+];
+
+/** The nine layers, each given its own slice of the walk, in order. */
+export const deviceLayers: DeviceLayer[] = layerSpecs.map((spec, index) => {
+  const start = LAYER_WALK_START + index * LAYER_SPAN;
+  return { ...spec, scrollRange: { start, end: start + LAYER_SPAN } };
+});
+
+/** Timeline position at which the last layer has finished. */
+const LAYER_WALK_END = LAYER_WALK_START + layerSpecs.length * LAYER_SPAN;
+
+/* -------------------------------------------------------------------------- *
+ * BENEFITS
+ *
+ * `verifiedBenefits` IS EMPTY ON PURPOSE, and the benefits act therefore
+ * consumes no scroll at all — the journey runs straight from the layer walk to
+ * the water finale, and BenefitsSequence renders nothing.
+ *
+ * Five claims arrived with the client's reference artwork. Every one of them is
+ * withheld:
+ *
+ *   "Regulates blood sugar levels"   — medical claim. Blocked.
+ *   "Enhances insulin sensitivity"   — medical claim. Blocked.
+ *   "Improves digestion"             — medical claim. Blocked.
+ *   "Aids weight management"         — medical claim. Blocked.
+ *   "Rich in nutrients"              — mineral-content claim; needs a lab report
+ *                                      naming the minerals and their quantities.
+ *
+ * To publish a benefit: add an entry below with wording that is verified and
+ * non-medical. Its scroll window, the finale, the CTA and the length of the pin
+ * all move to accommodate it automatically.
+ * -------------------------------------------------------------------------- */
 
 export type Benefit = {
   id: string;
   title: string;
   description: string;
+  /** Where the evidence comes from. Rendered under the card when present. */
+  evidenceNote?: string;
   range: ScrollRange;
 };
 
+type BenefitSpec = Omit<Benefit, "range">;
+
+const verifiedBenefits: BenefitSpec[] = [];
+
+export const benefits: Benefit[] = verifiedBenefits.map((spec, index) => {
+  const start = BENEFITS_START + index * BENEFIT_SPAN;
+  return {
+    ...spec,
+    range: {
+      inStart: start,
+      inEnd: start + 2,
+      outStart: start + 4.5,
+      outEnd: start + BENEFIT_SPAN,
+    },
+  };
+});
+
+/** Where the benefits act ends — equal to its start while there are none. */
+const BENEFITS_END = BENEFITS_START + verifiedBenefits.length * BENEFIT_SPAN;
+
 /**
- * One stone or component inside the device, called out beside the device render
- * as the visitor scrolls. The public page shows these only when `deviceElements`
- * below actually contains items, so an empty list ships an empty list — never a
- * placeholder card.
+ * Total length of the pinned timeline. Grows with the benefits, and the pin
+ * grows with it, so adding a card never speeds anything else up.
  */
-export type DeviceElement = {
-  id: string;
-  name: string;
-  shortDescription: string;
-  /**
-   * What the element does. Leave undefined until the client supplies wording
-   * that is both verified and non-medical — this string is rendered verbatim.
-   */
-  verifiedFunction?: string;
-  /** Where the above comes from: a lab report, a spec sheet, a supplier. */
-  evidenceNote?: string;
-  /** Optional close-up of the stone itself. */
-  image?: string;
-  /** Point on the device image the connector line targets, in % of its box. */
-  anchor?: { x: number; y: number };
-  /** Which side of the device the text sits on. Defaults to "left". */
-  side?: "left" | "right";
-  /** Timeline window (0–100) this callout occupies. One element at a time. */
-  scrollRange: { start: number; end: number };
-};
+export const timelineLength = BENEFITS_END + 18;
+
+/**
+ * Length of the pin, as multiples of the viewport height, before the timeline's
+ * own length is applied. Mobile is shorter: the same beats, less travel.
+ */
+export const scrollViewports = { desktop: 11, mobile: 8 } as const;
+
+/* -------------------------------------------------------------------------- *
+ * The frame sequence.
+ * -------------------------------------------------------------------------- */
 
 /**
  * One rendition of the glacier journey, exploded into still frames.
@@ -103,6 +291,15 @@ export const frames = {
     height: 432,
   },
 } as const satisfies Record<"desktop" | "mobile", FrameSet>;
+
+/**
+ * The footage is mapped onto the *glacier* portion of the timeline rather than
+ * the whole thing: it reaches its last frame exactly as the device arrives, and
+ * holds there behind the device and the cutaway for the rest of the scroll. Were
+ * it stretched across the full pin, the journey would crawl and most of the
+ * paints would land behind an opaque backdrop.
+ */
+export const sequence = { end: GLACIER_END } as const;
 
 export const assets = {
   /**
@@ -159,7 +356,7 @@ export const scenes = {
   opening: {
     headline: "Born from the Himalaya",
     instruction: "Scroll to discover",
-    range: { inStart: 0, inEnd: 0, outStart: 9, outEnd: 13 } satisfies ScrollRange,
+    range: { inStart: 0, inEnd: 0, outStart: 5, outEnd: 8 } satisfies ScrollRange,
   },
 
   /** Scene 2 — the glacier and the natural water source. */
@@ -167,7 +364,7 @@ export const scenes = {
     eyebrow: "The Source",
     heading: "Where the water begins",
     body: "High above the treeline, glacier ice gives up its water slowly. It moves through rock and gravel for a long time before it reaches anything built by people. That landscape is where this story starts.",
-    range: { inStart: 13, inEnd: 18, outStart: 26, outEnd: 30 } satisfies ScrollRange,
+    range: { inStart: 8, inEnd: 12, outStart: 16, outEnd: 19 } satisfies ScrollRange,
   },
 
   /**
@@ -181,7 +378,7 @@ export const scenes = {
     eyebrow: "Gonbo Rangjon",
     heading: "The mountain the stones are named for",
     body: "Gonbo Rangjon stands alone above the Zanskar valley in Ladakh, and the people who live beneath it have held it sacred for generations. The stones this device is built around are associated with that landscape. The mountain lends the story its name — no more than that.",
-    range: { inStart: 30, inEnd: 35, outStart: 43, outEnd: 47 } satisfies ScrollRange,
+    range: { inStart: 19, inEnd: 23, outStart: 27, outEnd: 30 } satisfies ScrollRange,
   },
 
   /** Scene 4 — the water turns toward the device. */
@@ -189,32 +386,24 @@ export const scenes = {
     eyebrow: "The Descent",
     heading: "From the valley to your home",
     body: "What the mountain does slowly, across rock and time, this device is made to bring indoors.",
-    range: { inStart: 47, inEnd: 51, outStart: 55, outEnd: 58 } satisfies ScrollRange,
+    range: { inStart: 30, inEnd: 33, outStart: 35, outEnd: 38 } satisfies ScrollRange,
   },
 
   /**
-   * Scene 5 — the device.
+   * Scene 5 — the device, seen from outside.
    *
-   * `range` is the whole layer: the device rises at 58, holds and drifts while
-   * the two copy blocks cross-fade beside it, then leaves at 92. The copy blocks
-   * share one grid cell, so swapping them costs no layout shift.
+   * It rises, settles, drifts, and then dissolves into the cutaway. The layer
+   * only fades; the depth is a separate transform on a separate element, so the
+   * whole scene can be handed to the compositor.
    */
   device: {
-    range: { inStart: 58, inEnd: 68, outStart: 88, outEnd: 92 } satisfies ScrollRange,
+    range: { inStart: 36, inEnd: 44, outStart: 48, outEnd: 53 } satisfies ScrollRange,
 
     intro: {
       eyebrow: "The Device",
       heading: product.name,
       body: "A water-conversion experience inspired by the Himalayan landscape. Designed to bring the story of Himalayan stones into the home.",
-      range: { inStart: 60, inEnd: 67, outStart: 71, outEnd: 74 } satisfies ScrollRange,
-    },
-
-    /** The internal stone / conversion concept — stated without a mechanism. */
-    conversion: {
-      eyebrow: "Inside",
-      heading: "The stones at its centre",
-      body: "Water passes through a chamber of stones drawn from the Himalayan landscape. The stones themselves, their materials and the part each one plays are being documented, and will be described here once that information is confirmed.",
-      range: { inStart: 74, inEnd: 78, outStart: 86, outEnd: 90 } satisfies ScrollRange,
+      range: { inStart: 38, inEnd: 43, outStart: 46, outEnd: 49 } satisfies ScrollRange,
     },
 
     /** Alt text for the device render. Describes it; claims nothing about it. */
@@ -223,18 +412,67 @@ export const scenes = {
   },
 
   /**
-   * Scene 6 — product benefits.
+   * Scene 6 — how the device works: the cutaway and the nine-layer walk.
    *
-   * Intentionally empty. Benefits may only be written once the client supplies
-   * verified, non-medical wording; until then the journey runs straight from the
-   * device to the call to action and no card renders.
-   *
-   * When they arrive: give them a window inside the device hold (68–88) or raise
-   * SCROLL_VIEWPORTS in GlacierExperience to buy more room.
+   * `range` is the whole layer. The walk itself runs from LAYER_WALK_START to
+   * LAYER_WALK_END and is driven entirely by `deviceLayers` above.
    */
-  benefits: [] as Benefit[],
+  howItWorks: {
+    eyebrow: "How it works",
+    heading: "Inside the column",
+    body: "Water enters at the funnel and passes down through a stack of stone, metal and wood before it reaches the outlet. Keep scrolling to follow it down.",
 
-  /** Scene 7 — enquiry / purchase. */
+    /**
+     * Shown in small print beneath the walk. It is the honest version of what we
+     * can currently say, and it is what keeps the section publishable: we are
+     * describing a build, not making a claim about it.
+     */
+    sourceNote:
+      "Composition as specified by the manufacturer. What each material does is not described here until independent test results are available.",
+
+    /** Describes the drawing for screen readers and for search engines. */
+    cutawayAlt:
+      "Cutaway diagram of the water converter: a funnel at the top feeding a column packed, from top to bottom, with Himalayan stones, Japanese stones, jamun wood and silver, magnesium, a magnet, Korean media stones and zinc, above the outlet.",
+
+    range: {
+      inStart: 48,
+      inEnd: 54,
+      outStart: LAYER_WALK_END,
+      outEnd: LAYER_WALK_END + 3.6,
+    } satisfies ScrollRange,
+
+    /** The walk itself. The water stream is scrubbed across exactly this window. */
+    walk: { start: LAYER_WALK_START, end: LAYER_WALK_END },
+
+    /** The heading block beside the cutaway; it holds for the whole walk. */
+    headingRange: {
+      inStart: 49,
+      inEnd: 53,
+      outStart: LAYER_WALK_END,
+      outEnd: LAYER_WALK_END + 3,
+    } satisfies ScrollRange,
+  },
+
+  /**
+   * Scene 8 — the finale: water leaving the device and filling a glass.
+   *
+   * No pH figure, no mineral count, no "before and after" — the client has
+   * supplied no test results, so the shot is the water and nothing else.
+   */
+  finale: {
+    eyebrow: "The result",
+    heading: "Water, poured",
+    body: "The water leaves the column and fills the glass. What it is like when it gets there will be described here once it has been measured.",
+    glassAlt: "A glass filling with water poured from the device",
+    range: {
+      inStart: BENEFITS_END,
+      inEnd: BENEFITS_END + 5,
+      outStart: BENEFITS_END + 9,
+      outEnd: BENEFITS_END + 12,
+    } satisfies ScrollRange,
+  },
+
+  /** Scene 9 — enquiry / purchase. */
   cta: {
     eyebrow: "Bring the mountain home",
     heading: product.name,
@@ -243,63 +481,14 @@ export const scenes = {
     whatsappLabel: "Enquire on WhatsApp",
     whatsappMessage: `Hi, I'd like to enquire about the ${product.name}.`,
     /** No exit: the CTA is the last thing on the page and must stay on screen. */
-    range: { inStart: 92, inEnd: 98, outStart: 100, outEnd: 100 } satisfies ScrollRange,
+    range: {
+      inStart: BENEFITS_END + 11,
+      inEnd: BENEFITS_END + 16,
+      outStart: timelineLength,
+      outEnd: timelineLength,
+    } satisfies ScrollRange,
   },
 } as const;
-
-/* -------------------------------------------------------------------------- *
- * The stones inside the device.
- *
- * Ships empty on purpose. The callout system in DeviceCallout.tsx is finished
- * and reusable — drop the client's verified stones in here, each with an anchor
- * point and a scroll window, and they will appear one at a time beside the
- * device with a connector line. Nothing renders while the list is empty.
- * -------------------------------------------------------------------------- */
-export const deviceElements: DeviceElement[] = [];
-
-/**
- * Development-only. Lets us exercise the callout system without inventing stone
- * names on the public site: every string below is visibly a placeholder, and the
- * list is only used when NEXT_PUBLIC_PREVIEW_ELEMENTS=1, which is never set in
- * production. It also documents the shape the real data should take.
- */
-export const devPreviewElements: DeviceElement[] = [
-  {
-    id: "placeholder-1",
-    name: "PLACEHOLDER — stone one",
-    shortDescription:
-      "Example callout copy. Replace with the client's verified description.",
-    verifiedFunction: "Example function — only fill this in once it is verified.",
-    evidenceNote: "Source: to be supplied",
-    anchor: { x: 50, y: 18 },
-    side: "left",
-    scrollRange: { start: 76, end: 80 },
-  },
-  {
-    id: "placeholder-2",
-    name: "PLACEHOLDER — stone two",
-    shortDescription:
-      "Example callout copy. Replace with the client's verified description.",
-    anchor: { x: 50, y: 48 },
-    side: "right",
-    scrollRange: { start: 80, end: 84 },
-  },
-  {
-    id: "placeholder-3",
-    name: "PLACEHOLDER — stone three",
-    shortDescription:
-      "Example callout copy. Replace with the client's verified description.",
-    anchor: { x: 50, y: 76 },
-    side: "left",
-    scrollRange: { start: 84, end: 88 },
-  },
-];
-
-/** Empty in every real build; the preview list only when the flag is set. */
-export const activeDeviceElements: DeviceElement[] =
-  process.env.NEXT_PUBLIC_PREVIEW_ELEMENTS === "1"
-    ? devPreviewElements
-    : deviceElements;
 
 /* -------------------------------------------------------------------------- *
  * Commerce, people and contact details.
@@ -352,7 +541,7 @@ export const contact = {
 export const seo = {
   title: `${product.name} — a scroll-driven Himalayan journey`,
   description:
-    "A scroll-driven Himalayan water-converter experience: from the glacier, through the landscape the Gonbo Rangjon stones are associated with, to the device itself.",
+    "A scroll-driven Himalayan water-converter experience: from the glacier, through the landscape the Gonbo Rangjon stones are associated with, into the device and down through the column.",
   keywords: [
     "Himalayan water converter",
     "water converter device",
@@ -379,9 +568,3 @@ export const whatsappHref: string | null = commerce.whatsappNumber
 export const hasPurchaseAction: boolean = Boolean(
   commerce.buyUrl || whatsappHref,
 );
-
-/** Scroll distance of the pinned experience, per breakpoint. */
-export const scrollDistance = {
-  desktop: "600vh",
-  mobile: "450vh",
-} as const;

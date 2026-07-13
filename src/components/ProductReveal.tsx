@@ -1,14 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import type { Ref, RefObject } from "react";
-import { DeviceCallout } from "@/components/DeviceCallout";
-import {
-  activeDeviceElements,
-  assets,
-  deviceImage,
-  scenes,
-} from "@/config/content";
+import type { Ref } from "react";
+import { assets, deviceImage, scenes } from "@/config/content";
 
 type ProductRevealProps = {
   /** The whole scene layer — the timeline fades this in and out. */
@@ -25,12 +19,8 @@ type ProductRevealProps = {
   mistRef?: Ref<HTMLDivElement>;
   /** Ground reflection. Desktop only. */
   reflectionRef?: Ref<HTMLDivElement>;
-  /** Copy block one — what the device is. */
+  /** The copy beside it — what the device is. */
   introRef?: Ref<HTMLDivElement>;
-  /** Copy block two — the stones inside it. */
-  conversionRef?: Ref<HTMLDivElement>;
-  /** One entry per configured device element. */
-  calloutRefs?: RefObject<(HTMLDivElement | null)[]>;
 };
 
 const { device } = scenes;
@@ -39,20 +29,20 @@ const { device } = scenes;
 const DEVICE_ASPECT = `${deviceImage.width} / ${deviceImage.height}`;
 
 /**
- * Scene 5 — the device.
+ * Scene 5 — the device, seen from outside.
  *
  * A 2.5D reveal built from the single supplied PNG. The device is the only thing
  * that moves in depth: it rises, settles and drifts, while the glow, the sweep,
  * the reflection and the mist sit on their own layers behind and in front of it.
- * Everything here is animated by GlacierExperience through the refs above; this
- * file only decides where things are.
+ * Then it dissolves, and HowItWorks takes over with the cutaway.
  *
  * The box is locked to the render's real aspect ratio, so `object-contain` fills
  * it exactly — the device can never stretch, and nothing shifts as it loads.
  *
- * Deliberately NOT a full turntable: one flat PNG has no back and no sides, so
- * the tilt stays within a few degrees. A real rotation needs a GLB, an image
- * sequence, or a pre-rendered rotation video.
+ * Deliberately NOT a turntable: one flat PNG has no back and no sides, so the
+ * tilt stays within a few degrees and reads as parallax. A real rotation needs a
+ * GLB, a shot image sequence, or a pre-rendered rotation — not a PNG spun on its
+ * Y axis, which would simply show the visitor a mirrored front.
  */
 export function ProductReveal({
   ref,
@@ -63,19 +53,15 @@ export function ProductReveal({
   mistRef,
   reflectionRef,
   introRef,
-  conversionRef,
-  calloutRefs,
 }: ProductRevealProps) {
-  const hasCallouts = activeDeviceElements.length > 0;
-
   return (
     <div
       ref={ref}
       data-scene="device"
       className="scene-layer pointer-events-none absolute inset-0"
     >
-      {/* Contrast bed. The device is mid-tone copper and the video ends on bright
-          ice, so without this it has nothing to sit against. */}
+      {/* Contrast bed. The device is mid-tone copper and the footage ends on
+          bright ice, so without this it has nothing to sit against. */}
       <div
         ref={backdropRef}
         aria-hidden="true"
@@ -83,11 +69,7 @@ export function ProductReveal({
       />
 
       <div className="relative flex h-full w-full items-center justify-center px-6 md:px-10 lg:px-16">
-        <div className="grid w-full max-w-6xl items-center gap-y-8 md:grid-cols-[auto_1fr] md:gap-x-14 lg:grid-cols-[1fr_auto_1fr] lg:gap-x-8">
-          {/* Empty gutter the callouts overhang into. Only exists at lg, where
-              there is finally room for a connector line and a text column. */}
-          <div aria-hidden="true" className="hidden lg:block" />
-
+        <div className="grid w-full max-w-5xl items-center gap-y-8 md:grid-cols-2 md:gap-x-16">
           {/* ---------------------------- Device ---------------------------- */}
           {/* `isolate` keeps the mist's negative z-index inside this column.
               Without it the mist would sit behind the darkening backdrop above
@@ -116,10 +98,10 @@ export function ProductReveal({
                   src={assets.device}
                   alt={device.imageAlt}
                   fill
-                  // The payoff of the whole scroll, and reused by the CTA. Fetch
-                  // it up front rather than mid-scrub — but as `eager`, not
-                  // `preload`: the poster is the LCP element and should keep the
-                  // one preload slot.
+                  // The payoff of the whole scroll, and reused by the finale and
+                  // the CTA. Fetch it up front rather than mid-scrub — but as
+                  // `eager`, not `preload`: the poster is the LCP element and
+                  // should keep the one preload slot.
                   loading="eager"
                   fetchPriority="high"
                   sizes="(max-width: 768px) 45vw, 280px"
@@ -148,19 +130,6 @@ export function ProductReveal({
                     className="absolute inset-y-0 left-0 w-[65%] -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent md:blur-[3px]"
                   />
                 </div>
-
-                {/* Callouts are anchored inside the device box, so an element's
-                    `anchor` is a percentage of the device itself. */}
-                {hasCallouts &&
-                  activeDeviceElements.map((element, index) => (
-                    <DeviceCallout
-                      key={element.id}
-                      ref={(node) => {
-                        if (calloutRefs) calloutRefs.current[index] = node;
-                      }}
-                      element={element}
-                    />
-                  ))}
               </div>
 
               {/* Ground reflection. Pure decoration and the cheapest thing to
@@ -198,38 +167,16 @@ export function ProductReveal({
           </div>
 
           {/* ----------------------------- Copy ----------------------------- */}
-          {/* Both blocks share one grid cell, so the cell is as tall as the
-              taller of the two and the cross-fade shifts nothing. */}
-          <div className="grid text-center md:text-left">
-            <div
-              ref={introRef}
-              className="scene-layer col-start-1 row-start-1 max-w-md md:max-w-sm lg:max-w-md"
-            >
-              <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
-                {device.intro.eyebrow}
-              </p>
-              <h2 className="mt-4 font-display text-3xl leading-[1.05] font-light text-balance text-ice md:text-5xl lg:text-6xl">
-                {device.intro.heading}
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
-                {device.intro.body}
-              </p>
-            </div>
-
-            <div
-              ref={conversionRef}
-              className="scene-layer col-start-1 row-start-1 max-w-md md:max-w-sm lg:max-w-md"
-            >
-              <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
-                {device.conversion.eyebrow}
-              </p>
-              <h2 className="mt-4 font-display text-3xl leading-[1.05] font-light text-balance text-ice md:text-5xl lg:text-6xl">
-                {device.conversion.heading}
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
-                {device.conversion.body}
-              </p>
-            </div>
+          <div ref={introRef} className="scene-layer text-center md:text-left">
+            <p className="font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
+              {device.intro.eyebrow}
+            </p>
+            <h2 className="mt-4 font-display text-3xl leading-[1.05] font-light text-balance text-ice md:text-5xl lg:text-6xl">
+              {device.intro.heading}
+            </h2>
+            <p className="mt-5 max-w-md text-base leading-relaxed text-pretty text-silver md:text-lg">
+              {device.intro.body}
+            </p>
           </div>
         </div>
       </div>

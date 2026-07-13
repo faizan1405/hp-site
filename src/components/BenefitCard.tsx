@@ -31,6 +31,13 @@ export function BenefitCard({ ref, benefit, index, total }: BenefitCardProps) {
         <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
           {benefit.description}
         </p>
+        {/* Where the claim comes from. A benefit without one is a benefit we
+            should not be printing — see the note above `verifiedBenefits`. */}
+        {benefit.evidenceNote && (
+          <p className="mt-4 text-[0.7rem] leading-relaxed text-silver-dim">
+            {benefit.evidenceNote}
+          </p>
+        )}
       </article>
     </div>
   );

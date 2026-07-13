@@ -3,19 +3,25 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BenefitCard } from "@/components/BenefitCard";
+import { BenefitsSequence } from "@/components/BenefitsSequence";
 import { FinalCTA } from "@/components/FinalCTA";
+import { HowItWorks } from "@/components/HowItWorks";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ProductReveal } from "@/components/ProductReveal";
 import { ReducedMotionFallback } from "@/components/ReducedMotionFallback";
 import { ScrollCanvas } from "@/components/ScrollCanvas";
 import { StoryOverlay } from "@/components/StoryOverlay";
+import { WaterFinale } from "@/components/WaterFinale";
 import {
-  activeDeviceElements,
+  benefits,
+  deviceLayers,
   hasPurchaseAction,
   product,
   scenes,
+  scrollViewports,
+  sequence,
   siteName,
+  timelineLength,
   type ScrollRange,
 } from "@/config/content";
 import { useExperienceMode } from "@/hooks/useExperienceMode";
@@ -25,13 +31,7 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const { opening, source, origin, descent, device, benefits, cta } = scenes;
-
-/**
- * Extra scroll beyond the first viewport, in multiples of the viewport height.
- * The pin spacer turns these into a ~600vh (desktop) / ~450vh (mobile) page.
- */
-const SCROLL_VIEWPORTS = { desktop: 5, mobile: 3.5 } as const;
+const { opening, source, origin, descent, device, howItWorks, finale, cta } = scenes;
 
 /**
  * How many rAF ticks the draw loop coasts for after the picture has caught up
@@ -39,6 +39,14 @@ const SCROLL_VIEWPORTS = { desktop: 5, mobile: 3.5 } as const;
  * comfortably outlasts the 0.6s scrub ease.
  */
 const IDLE_FRAMES_BEFORE_STANDDOWN = 40;
+
+/**
+ * What an inactive layer of the cutaway drops to while another one is lit. Not
+ * zero: the visitor has to keep seeing the whole stack to understand where in it
+ * they are — the dim layers are the context that makes the bright one mean
+ * something.
+ */
+const LAYER_DIM = 0.2;
 
 type RevealOptions = {
   /** Distance the layer travels up into place. */
@@ -52,7 +60,8 @@ type RevealOptions = {
 
 /**
  * Adds a fade-in / hold / fade-out pair to the master timeline. Timeline units
- * are scroll percentages, so a range of 15–35 is literally 15%–35% of the pin.
+ * are the units in content.ts, so a range of 15–35 is literally that slice of
+ * the pin.
  */
 function reveal(
   timeline: gsap.core.Timeline,
@@ -126,7 +135,7 @@ export function GlacierExperience() {
   const originRef = useRef<HTMLDivElement>(null);
   const descentRef = useRef<HTMLDivElement>(null);
 
-  // Scene 5 — the device and everything layered around it.
+  // Scene 5 — the device, from outside.
   const deviceLayerRef = useRef<HTMLDivElement>(null);
   const deviceRef = useRef<HTMLDivElement>(null);
   const deviceBackdropRef = useRef<HTMLDivElement>(null);
@@ -135,10 +144,27 @@ export function GlacierExperience() {
   const deviceMistRef = useRef<HTMLDivElement>(null);
   const deviceReflectionRef = useRef<HTMLDivElement>(null);
   const deviceIntroRef = useRef<HTMLDivElement>(null);
-  const deviceConversionRef = useRef<HTMLDivElement>(null);
-  const calloutRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Scene 6 — the cutaway and the nine-layer walk.
+  const hiwRef = useRef<HTMLDivElement>(null);
+  const hiwBackdropRef = useRef<HTMLDivElement>(null);
+  const hiwCutawayRef = useRef<HTMLDivElement>(null);
+  const hiwWaterRef = useRef<HTMLDivElement>(null);
+  const hiwHeadingRef = useRef<HTMLDivElement>(null);
+  const hiwNoteRef = useRef<HTMLParagraphElement>(null);
+  const hiwCalloutRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Scene 7 — benefits. Empty until they are verified.
   const benefitRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Scene 8 — the pour.
+  const finaleRef = useRef<HTMLDivElement>(null);
+  const finaleBackdropRef = useRef<HTMLDivElement>(null);
+  const finaleDeviceRef = useRef<HTMLDivElement>(null);
+  const finalePourRef = useRef<HTMLDivElement>(null);
+  const finaleGlassRef = useRef<HTMLDivElement>(null);
+  const finaleCopyRef = useRef<HTMLDivElement>(null);
+
   const ctaRef = useRef<HTMLElement>(null);
 
   /* ------------------------------------------------------------------ *
@@ -164,18 +190,21 @@ export function GlacierExperience() {
         // on a phone costs more than every other effect on this page put together.
         const blur = isDesktop ? 10 : 0;
         const viewports = isDesktop
-          ? SCROLL_VIEWPORTS.desktop
-          : SCROLL_VIEWPORTS.mobile;
+          ? scrollViewports.desktop
+          : scrollViewports.mobile;
 
         const timeline = gsap.timeline({ defaults: { ease: "none" } });
 
+        /* ---------------------------------------------------------------- *
+         * Act I — the glacier.
+         * ---------------------------------------------------------------- */
         reveal(timeline, openingRef.current, opening.range, { blur, exitY: 40 });
         reveal(timeline, sourceRef.current, source.range, { blur });
         reveal(timeline, originRef.current, origin.range, { blur });
         reveal(timeline, descentRef.current, descent.range, { blur });
 
         /* ---------------------------------------------------------------- *
-         * Scene 5 — the device.
+         * Act II — the device, from outside.
          *
          * The layer itself only fades. Everything that reads as depth is a
          * separate transform on a separate element, so the browser can hand the
@@ -186,7 +215,7 @@ export function GlacierExperience() {
           blur: 0,
           y: 0,
           scale: 1,
-          exitY: 24,
+          exitY: 0,
         });
 
         const enterAt = device.range.inStart;
@@ -199,11 +228,7 @@ export function GlacierExperience() {
           timeline.fromTo(
             deviceBackdropRef.current,
             { autoAlpha: 0 },
-            {
-              autoAlpha: 1,
-              duration: enterDuration * 0.7,
-              ease: "power1.out",
-            },
+            { autoAlpha: 1, duration: enterDuration * 0.7, ease: "power1.out" },
             enterAt,
           );
         }
@@ -236,7 +261,6 @@ export function GlacierExperience() {
           );
 
           // The hold: a slow drift against the still-moving glacier behind it.
-          // This is the parallax, and the only motion while the copy changes.
           timeline.to(
             deviceRef.current,
             {
@@ -249,9 +273,17 @@ export function GlacierExperience() {
             settledAt,
           );
 
+          // The exit is the transition into the cutaway: the device does not
+          // shrink away, it comes *at* the camera and dissolves, so the cutaway
+          // rising behind it reads as the inside of the thing we just went into.
           timeline.to(
             deviceRef.current,
-            { scale: 0.985, duration: exitDuration, ease: "power2.in" },
+            {
+              scale: 1.45,
+              ...(blur > 0 ? { filter: "blur(12px)" } : {}),
+              duration: exitDuration,
+              ease: "power2.in",
+            },
             device.range.outStart,
           );
         }
@@ -260,12 +292,7 @@ export function GlacierExperience() {
           timeline.fromTo(
             deviceGlowRef.current,
             { autoAlpha: 0, scale: 0.7 },
-            {
-              autoAlpha: 1,
-              scale: 1,
-              duration: enterDuration * 0.8,
-              ease: "power1.out",
-            },
+            { autoAlpha: 1, scale: 1, duration: enterDuration * 0.8, ease: "power1.out" },
             enterAt + 2,
           );
         }
@@ -278,11 +305,7 @@ export function GlacierExperience() {
           timeline.fromTo(
             deviceSweepRef.current,
             { xPercent: -160 },
-            {
-              xPercent: 200,
-              duration: enterDuration + 2,
-              ease: "none",
-            },
+            { xPercent: 200, duration: enterDuration + 2, ease: "none" },
             enterAt + 2,
           );
         }
@@ -293,12 +316,7 @@ export function GlacierExperience() {
           timeline.fromTo(
             deviceReflectionRef.current,
             { autoAlpha: 0, y: -16 },
-            {
-              autoAlpha: 0.22,
-              y: 0,
-              duration: enterDuration * 0.7,
-              ease: "power1.out",
-            },
+            { autoAlpha: 0.22, y: 0, duration: enterDuration * 0.7, ease: "power1.out" },
             enterAt + 3,
           );
         }
@@ -307,12 +325,7 @@ export function GlacierExperience() {
           timeline.fromTo(
             deviceMistRef.current,
             { autoAlpha: 0, y: 24 },
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: enterDuration * 0.8,
-              ease: "power1.out",
-            },
+            { autoAlpha: 1, y: 0, duration: enterDuration * 0.8, ease: "power1.out" },
             enterAt + 2,
           );
           timeline.to(
@@ -322,50 +335,209 @@ export function GlacierExperience() {
           );
         }
 
-        // The two copy blocks cross-fade in a shared grid cell beside the device.
         reveal(timeline, deviceIntroRef.current, device.intro.range, {
           blur: blur > 0 ? 6 : 0,
           y: 26,
           exitY: 20,
         });
 
-        // On a phone the callouts sit *below* the device, which is exactly where
-        // the conversion copy is. When stones are configured, pull that copy out
-        // before the first one arrives so the two never share the space.
-        const firstCallout = activeDeviceElements[0];
-        const conversionRange: ScrollRange =
-          !isDesktop && firstCallout
-            ? {
-                ...device.conversion.range,
-                outStart: firstCallout.scrollRange.start - 3,
-                outEnd: firstCallout.scrollRange.start,
-              }
-            : device.conversion.range;
-
-        reveal(timeline, deviceConversionRef.current, conversionRange, {
-          blur: blur > 0 ? 6 : 0,
-          y: 26,
-          exitY: 20,
+        /* ---------------------------------------------------------------- *
+         * Act III — how the device works.
+         *
+         * The cutaway grows out of the device that just dissolved, then the walk
+         * lights one material at a time while the water runs down past them.
+         *
+         * Every beat below is a tween on this one scrubbed timeline, which is
+         * what makes reverse scrolling free: there is no state machine listening
+         * for a scroll direction, no "current layer" in React, and nothing to
+         * get stuck. At any scroll position the entire picture — which layer is
+         * lit, how far the water has fallen, which words are on screen — is a
+         * pure function of the timeline's progress.
+         * ---------------------------------------------------------------- */
+        reveal(timeline, hiwRef.current, howItWorks.range, {
+          blur: 0,
+          y: 0,
+          scale: 1,
+          exitY: 0,
         });
 
-        // Stone callouts: one at a time, each inside its own window. Empty until
-        // the client's verified list lands in content.ts.
-        activeDeviceElements.forEach((element, index) => {
-          const node = calloutRefs.current[index];
-          if (!node) return;
+        const walk = howItWorks.walk;
+        const hiwIn = howItWorks.range.inEnd - howItWorks.range.inStart;
 
-          const { start, end } = element.scrollRange;
-          const fade = Math.min(2, (end - start) / 3);
-
-          reveal(
-            timeline,
-            node,
-            { inStart: start, inEnd: start + fade, outStart: end - fade, outEnd: end },
-            { blur: 0, y: 14, exitY: 12, scale: 1 },
+        if (hiwBackdropRef.current) {
+          timeline.fromTo(
+            hiwBackdropRef.current,
+            { autoAlpha: 0 },
+            { autoAlpha: 1, duration: hiwIn * 0.8, ease: "power1.out" },
+            howItWorks.range.inStart,
           );
+        }
+
+        if (hiwCutawayRef.current) {
+          timeline.fromTo(
+            hiwCutawayRef.current,
+            { autoAlpha: 0, scale: 0.82, rotateX: 8 },
+            {
+              autoAlpha: 1,
+              scale: 1,
+              rotateX: 0,
+              duration: hiwIn,
+              ease: "power2.out",
+            },
+            howItWorks.range.inStart,
+          );
+        }
+
+        // On a phone the heading sits above a cutaway that has been pulled up to
+        // make room for the callouts below it — there is no left column to park
+        // it in, so it leaves before the walk starts rather than fighting for the
+        // same air.
+        const headingRange: ScrollRange = isDesktop
+          ? howItWorks.headingRange
+          : {
+              ...howItWorks.headingRange,
+              outStart: walk.start - 3,
+              outEnd: walk.start - 0.5,
+            };
+
+        reveal(timeline, hiwHeadingRef.current, headingRange, {
+          blur: blur > 0 ? 6 : 0,
+          y: 24,
+          exitY: 18,
         });
 
-        // Scene 6: one card at a time. Empty until the benefits are verified.
+        reveal(timeline, hiwNoteRef.current, howItWorks.range, {
+          blur: 0,
+          y: 12,
+          exitY: 8,
+          scale: 1,
+        });
+
+        /* ------------------------- The layer walk ------------------------- */
+        const cutaway = hiwCutawayRef.current;
+
+        if (cutaway) {
+          const allLayers = cutaway.querySelectorAll("[data-layer]");
+
+          // Everything drops to the base dim just before the first layer lights.
+          timeline.to(
+            allLayers,
+            { opacity: LAYER_DIM, duration: 2, ease: "power2.inOut" },
+            walk.start - 2,
+          );
+
+          deviceLayers.forEach((layer, index) => {
+            const group = cutaway.querySelector(`[data-layer="${layer.id}"]`);
+            const halo = cutaway.querySelector(`[data-halo="${layer.id}"]`);
+            const anchor = cutaway.querySelector(`[data-anchor="${layer.id}"]`);
+            const callout = hiwCalloutRefs.current[index];
+
+            const { start, end } = layer.scrollRange;
+            const fade = (end - start) / 3;
+            const isLast = index === deviceLayers.length - 1;
+
+            if (group) {
+              timeline.fromTo(
+                group,
+                { opacity: LAYER_DIM },
+                { opacity: 1, duration: fade, ease: "power2.out" },
+                start,
+              );
+              // The last one is left lit: the closing beat below brings the whole
+              // stack back up, and dimming it first would read as a flicker.
+              if (!isLast) {
+                timeline.to(
+                  group,
+                  { opacity: LAYER_DIM, duration: fade, ease: "power2.in" },
+                  end - fade,
+                );
+              }
+            }
+
+            if (halo) {
+              timeline.fromTo(
+                halo,
+                { opacity: 0 },
+                { opacity: 1, duration: fade, ease: "power2.out" },
+                start,
+              );
+              timeline.to(
+                halo,
+                { opacity: 0, duration: fade, ease: "power2.in" },
+                end - fade,
+              );
+            }
+
+            // The dot the connector line lands on.
+            if (anchor) {
+              timeline.fromTo(
+                anchor,
+                { opacity: 0 },
+                { opacity: 1, duration: fade, ease: "power2.out" },
+                start,
+              );
+              timeline.to(
+                anchor,
+                { opacity: 0, duration: fade, ease: "power2.in" },
+                end - fade,
+              );
+            }
+
+            reveal(
+              timeline,
+              callout,
+              { inStart: start, inEnd: start + fade, outStart: end - fade, outEnd: end },
+              { blur: 0, y: 14, exitY: 12, scale: 1 },
+            );
+          });
+
+          // The water has reached the outlet: the whole stack comes back up.
+          timeline.to(
+            allLayers,
+            { opacity: 1, duration: 3, ease: "power2.out" },
+            walk.end,
+          );
+        }
+
+        /* --------------------------- The water ---------------------------- */
+        // One transform, running the length of the walk, so the front arrives at
+        // each layer as that layer lights up — and runs back up the column,
+        // exactly, when the visitor scrolls back.
+        const water = hiwWaterRef.current;
+
+        if (water) {
+          const walkSpan = walk.end - walk.start;
+
+          timeline.fromTo(
+            water.querySelectorAll("[data-stream]"),
+            { yPercent: -100 },
+            { yPercent: 0, duration: walkSpan, ease: "none" },
+            walk.start,
+          );
+
+          // Droplets trail the front rather than leading it: the stagger delays
+          // each one's start, so they arrive behind the surface, not ahead of it.
+          const drops = water.querySelectorAll("[data-droplet]");
+          if (isDesktop && drops.length > 0) {
+            timeline.fromTo(
+              drops,
+              { yPercent: -100, autoAlpha: 0 },
+              {
+                yPercent: 0,
+                autoAlpha: 1,
+                duration: walkSpan * 0.72,
+                ease: "none",
+                stagger: { each: walkSpan * 0.09 },
+              },
+              walk.start,
+            );
+          }
+        }
+
+        /* ---------------------------------------------------------------- *
+         * Act IV — benefits. Nothing renders while they are unverified, and the
+         * loop below simply does not run.
+         * ---------------------------------------------------------------- */
         benefits.forEach((benefit, index) => {
           reveal(timeline, benefitRefs.current[index], benefit.range, {
             blur: blur > 0 ? 8 : 0,
@@ -374,12 +546,93 @@ export function GlacierExperience() {
           });
         });
 
-        // Scene 7: fades in and stays — it is the last thing on the page.
+        /* ---------------------------------------------------------------- *
+         * Act V — the pour.
+         * ---------------------------------------------------------------- */
+        reveal(timeline, finaleRef.current, finale.range, {
+          blur: 0,
+          y: 0,
+          scale: 1,
+          exitY: 0,
+        });
+
+        if (finaleBackdropRef.current) {
+          timeline.fromTo(
+            finaleBackdropRef.current,
+            { autoAlpha: 0 },
+            {
+              autoAlpha: 1,
+              duration: (finale.range.inEnd - finale.range.inStart) * 0.8,
+              ease: "power1.out",
+            },
+            finale.range.inStart,
+          );
+        }
+
+        if (finaleDeviceRef.current) {
+          timeline.fromTo(
+            finaleDeviceRef.current,
+            { autoAlpha: 0, y: 34, scale: 0.94 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              scale: 1,
+              duration: finale.range.inEnd - finale.range.inStart,
+              ease: "power2.out",
+            },
+            finale.range.inStart,
+          );
+        }
+
+        // The pour starts as the device settles and runs until the scene leaves.
+        const pourStart = finale.range.inEnd - 1;
+        const pourSpan = finale.range.outStart - pourStart;
+
+        if (finalePourRef.current) {
+          timeline.fromTo(
+            finalePourRef.current.querySelectorAll("[data-stream]"),
+            { yPercent: -100 },
+            { yPercent: 0, duration: pourSpan * 0.45, ease: "power1.in" },
+            pourStart,
+          );
+        }
+
+        const glassFill =
+          finaleGlassRef.current?.querySelector("[data-glass-fill]") ?? null;
+
+        if (glassFill) {
+          timeline.fromTo(
+            glassFill,
+            { scaleY: 0 },
+            {
+              scaleY: 0.72,
+              // In viewBox units. A percentage transform-origin on an SVG element
+              // is not interpreted the same way by every engine; this is.
+              svgOrigin: "60 132",
+              duration: pourSpan * 0.75,
+              ease: "power1.out",
+            },
+            // Begins once the stream has actually reached the rim.
+            pourStart + pourSpan * 0.3,
+          );
+        }
+
+        reveal(timeline, finaleCopyRef.current, finale.range, {
+          blur: blur > 0 ? 6 : 0,
+          y: 26,
+          exitY: 20,
+        });
+
+        /* ---------------------------------------------------------------- *
+         * Act VI — the call to action. Fades in and stays: it is the last thing
+         * on the page.
+         * ---------------------------------------------------------------- */
         reveal(timeline, ctaRef.current, cta.range, { blur: 0, y: 30, exitY: 0 });
 
-        // Hold the timeline open to exactly 100 units so one unit is one percent
-        // of the scroll, whatever the scenes above happen to add up to.
-        timeline.to({}, { duration: 100 }, 0);
+        // Hold the timeline open to its full declared length, whatever the scenes
+        // above happen to add up to, so one timeline unit is always the same
+        // amount of scroll.
+        timeline.to({}, { duration: timelineLength }, 0);
 
         /* -------------------------------------------------------------- *
          * Paint the canvas from the timeline.
@@ -403,12 +656,21 @@ export function GlacierExperience() {
         let rafId: number | null = null;
         let idleFrames = 0;
 
+        /**
+         * The footage is mapped onto the glacier act alone, not the whole pin: it
+         * reaches its final frame exactly as the device arrives and holds there,
+         * behind an all-but-opaque backdrop, for the rest of the scroll. Stretched
+         * across the full timeline it would crawl, and most of its paints would
+         * land where nobody can see them.
+         */
+        const glacierProgress = sequence.end / timelineLength;
+
         const renderFrame = () => {
           rafId = requestAnimationFrame(renderFrame);
 
           // Read the *timeline's* progress rather than the raw scroll position, so
           // the picture and the copy share one eased scrub and never drift apart.
-          const painted = draw(timeline.progress());
+          const painted = draw(Math.min(1, timeline.progress() / glacierProgress));
 
           if (painted) {
             idleFrames = 0;
@@ -433,7 +695,10 @@ export function GlacierExperience() {
         ScrollTrigger.create({
           trigger: stage,
           start: "top top",
-          end: () => `+=${window.innerHeight * viewports}`,
+          // The pin is as long as the timeline says it is, so adding a verified
+          // benefit lengthens the page instead of speeding everything else up.
+          end: () =>
+            `+=${window.innerHeight * viewports * (timelineLength / 100)}`,
           pin: stage,
           pinSpacing: true,
           anticipatePin: 1,
@@ -486,7 +751,7 @@ export function GlacierExperience() {
     return () => window.clearTimeout(timer);
   }, [status]);
 
-  /** Keyboard users should not have to scroll 600vh to reach the end. */
+  /** Keyboard users should not have to scroll 1,100vh to reach the end. */
   const skipToEnd = useCallback(() => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: "auto" });
     window.setTimeout(() => {
@@ -609,7 +874,7 @@ export function GlacierExperience() {
             </div>
           </StoryOverlay>
 
-          {/* Scene 5 — the device. */}
+          {/* Scene 5 — the device, from outside. */}
           <ProductReveal
             ref={deviceLayerRef}
             deviceRef={deviceRef}
@@ -619,24 +884,33 @@ export function GlacierExperience() {
             mistRef={deviceMistRef}
             reflectionRef={deviceReflectionRef}
             introRef={deviceIntroRef}
-            conversionRef={deviceConversionRef}
-            calloutRefs={calloutRefs}
           />
 
-          {/* Scene 6 — benefits. Renders nothing until they are verified. */}
-          {benefits.map((benefit, index) => (
-            <BenefitCard
-              key={benefit.id}
-              ref={(node) => {
-                benefitRefs.current[index] = node;
-              }}
-              benefit={benefit}
-              index={index}
-              total={benefits.length}
-            />
-          ))}
+          {/* Scene 6 — inside it. */}
+          <HowItWorks
+            ref={hiwRef}
+            backdropRef={hiwBackdropRef}
+            cutawayRef={hiwCutawayRef}
+            waterRef={hiwWaterRef}
+            headingRef={hiwHeadingRef}
+            noteRef={hiwNoteRef}
+            calloutRefs={hiwCalloutRefs}
+          />
 
-          {/* Scene 7 — enquiry / purchase. */}
+          {/* Scene 7 — benefits. Renders nothing until they are verified. */}
+          <BenefitsSequence cardRefs={benefitRefs} />
+
+          {/* Scene 8 — the pour. */}
+          <WaterFinale
+            ref={finaleRef}
+            backdropRef={finaleBackdropRef}
+            deviceRef={finaleDeviceRef}
+            pourRef={finalePourRef}
+            glassRef={finaleGlassRef}
+            copyRef={finaleCopyRef}
+          />
+
+          {/* Scene 9 — enquiry / purchase. */}
           <FinalCTA ref={ctaRef} variant="overlay" />
         </section>
       </main>

@@ -4,9 +4,10 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { FinalCTA } from "@/components/FinalCTA";
 import {
-  activeDeviceElements,
   assets,
+  benefits,
   deviceImage,
+  deviceLayers,
   product,
   scenes,
 } from "@/config/content";
@@ -19,7 +20,7 @@ type FallbackProps = {
   background: "poster" | "loop";
 };
 
-const { opening, source, origin, descent, device, benefits } = scenes;
+const { opening, source, origin, descent, device, howItWorks, finale } = scenes;
 
 /**
  * The no-scrubbing path. Same story, same device, same call to action —
@@ -143,46 +144,57 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
           <p className="mt-5 text-base leading-relaxed text-pretty text-silver md:text-lg">
             {device.intro.body}
           </p>
-
-          <h3 className="mt-10 font-display text-2xl leading-tight font-light text-balance text-ice md:text-3xl">
-            {device.conversion.heading}
-          </h3>
-          <p className="mt-4 text-base leading-relaxed text-pretty text-silver md:text-lg">
-            {device.conversion.body}
-          </p>
         </div>
       </section>
 
-      {/* The stones, as a plain list. Empty until the verified list exists. */}
-      {activeDeviceElements.length > 0 && (
-        <section className="mx-auto max-w-4xl px-6 py-20 md:py-28">
-          <ul className="grid gap-6 md:grid-cols-3">
-            {activeDeviceElements.map((element) => (
-              <li
-                key={element.id}
-                className="rounded-2xl border border-white/15 bg-navy-900/70 p-7"
-              >
-                <h3 className="font-mono text-[0.65rem] tracking-[0.3em] text-glacier-300 uppercase">
-                  {element.name}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
-                  {element.shortDescription}
+      {/* How it works. The scrubbed page walks these one at a time; here they are
+          simply a numbered list, in the order the water meets them. Same content
+          from the same place in content.ts — no scroll required to read any of it. */}
+      <section className="mx-auto max-w-4xl px-6 py-20 md:py-28">
+        <p className="text-[0.7rem] font-medium tracking-[0.35em] text-glacier-300 uppercase">
+          {howItWorks.eyebrow}
+        </p>
+        <h2 className="mt-4 font-display text-4xl leading-tight font-light text-balance text-ice md:text-5xl">
+          {howItWorks.heading}
+        </h2>
+        <p className="mt-6 text-base leading-relaxed text-pretty text-silver md:text-lg">
+          {howItWorks.body}
+        </p>
+
+        <ol className="mt-12 grid gap-6 md:grid-cols-2">
+          {deviceLayers.map((layer, index) => (
+            <li
+              key={layer.id}
+              className="rounded-2xl border border-white/15 bg-navy-900/70 p-7"
+            >
+              <p className="font-mono text-[0.6rem] tracking-[0.3em] text-glacier-500/70 uppercase">
+                {String(index + 1).padStart(2, "0")} /{" "}
+                {String(deviceLayers.length).padStart(2, "0")}
+              </p>
+              <h3 className="mt-2 font-display text-2xl leading-tight font-light text-balance text-ice">
+                {layer.name}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
+                {layer.description}
+              </p>
+              {layer.verifiedFunction && (
+                <p className="mt-2 text-sm leading-relaxed text-pretty text-ice">
+                  {layer.verifiedFunction}
                 </p>
-                {element.verifiedFunction && (
-                  <p className="mt-2 text-sm leading-relaxed text-pretty text-ice">
-                    {element.verifiedFunction}
-                  </p>
-                )}
-                {element.evidenceNote && (
-                  <p className="mt-2 text-[0.7rem] leading-relaxed text-silver-dim">
-                    {element.evidenceNote}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+              )}
+              {layer.evidenceNote && (
+                <p className="mt-2 text-[0.7rem] leading-relaxed text-silver-dim">
+                  {layer.evidenceNote}
+                </p>
+              )}
+            </li>
+          ))}
+        </ol>
+
+        <p className="mt-10 text-[0.7rem] leading-relaxed text-pretty text-silver-dim">
+          {howItWorks.sourceNote}
+        </p>
+      </section>
 
       {benefits.length > 0 && (
         <section className="mx-auto max-w-4xl px-6 py-20 md:py-28">
