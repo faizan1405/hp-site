@@ -604,23 +604,77 @@ export function GlacierExperience() {
           );
         }
 
-        const glassFill =
-          finaleGlassRef.current?.querySelector("[data-glass-fill]") ?? null;
+        // The glass fills by *reveal*, not by transform. `[data-fill-clip]` is
+        // a rect living inside its own <clipPath> in WaterFinale's <Glass />;
+        // the water body and its meniscus are drawn once, at full size, and
+        // this rect's own `y`/`height` attributes are what uncover them from
+        // the bottom up. A CSS `scaleY` + `svgOrigin` on the water group was
+        // the previous approach and is exactly what was invisible: how a
+        // browser resolves an SVG transform-origin for a plain `<g>` with no
+        // intrinsic geometry is not guaranteed, and evidently was not landing
+        // where GSAP's `svgOrigin` expected it to. An attribute tween on a
+        // real rect has no such ambiguity — `y` and `height` are geometry,
+        // not a transform matrix.
+        const fillClip =
+          finaleGlassRef.current?.querySelector("[data-fill-clip]") ?? null;
+        const fillMeniscus =
+          finaleGlassRef.current?.querySelector("[data-fill-meniscus]") ?? null;
 
-        if (glassFill) {
-          // The level inside the glass. `ease: "none"` over its own dedicated
-          // window makes the rise a direct, one-to-one function of scroll —
-          // scroll a third of the way through `fill` and the glass is a third
-          // full, in either direction — rather than a GSAP flourish riding on
-          // top of an already-scrubbed timeline.
+        if (process.env.NODE_ENV !== "production" && finaleGlassRef.current) {
+          const clipCount =
+            finaleGlassRef.current.querySelectorAll("[data-fill-clip]").length;
+          const meniscusCount =
+            finaleGlassRef.current.querySelectorAll("[data-fill-meniscus]").length;
+          if (clipCount !== 1) {
+            console.error(
+              `[GlacierExperience] expected exactly one [data-fill-clip], found ${clipCount}.`,
+            );
+          }
+          if (meniscusCount !== 1) {
+            console.error(
+              `[GlacierExperience] expected exactly one [data-fill-meniscus], found ${meniscusCount}.`,
+            );
+          }
+        }
+
+        // Geometry, in the glass SVG's own viewBox units — matches the water
+        // body rect and the interior clip path drawn in WaterFinale's <Glass />.
+        // The top is where a completely full glass ends; the bottom is the
+        // floor of the interior, where the fill starts from empty.
+        const GLASS_WATER_TOP = 16;
+        const GLASS_WATER_BOTTOM = 132;
+
+        if (fillClip) {
           timeline.fromTo(
-            glassFill,
-            { scaleY: 0 },
+            fillClip,
+            { attr: { y: GLASS_WATER_BOTTOM, height: 0 } },
             {
-              scaleY: 0.72,
-              // In viewBox units. A percentage transform-origin on an SVG
-              // element is not interpreted the same way by every engine; this is.
-              svgOrigin: "60 132",
+              attr: {
+                y: GLASS_WATER_TOP,
+                height: GLASS_WATER_BOTTOM - GLASS_WATER_TOP,
+              },
+              // `ease: "none"` makes the rise a direct, one-to-one function of
+              // scroll — a third of the way through `fill` and the glass is a
+              // third full, in either direction.
+              duration: fill.end - fill.start,
+              ease: "none",
+            },
+            fill.start,
+          );
+        }
+
+        if (fillMeniscus) {
+          // The bright surface line is deliberately NOT inside the fill clip —
+          // if it were, the reveal would cut it in half exactly where it
+          // matters most. Instead its own `cy` is driven directly, in the same
+          // window with the same easing as the clip rect above, so the two
+          // move in exact lockstep: both are pure functions of one scrubbed
+          // timeline position, not two tweens hoping to stay in sync.
+          timeline.fromTo(
+            fillMeniscus,
+            { attr: { cy: GLASS_WATER_BOTTOM } },
+            {
+              attr: { cy: GLASS_WATER_TOP },
               duration: fill.end - fill.start,
               ease: "none",
             },

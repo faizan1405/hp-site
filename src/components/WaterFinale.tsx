@@ -17,7 +17,8 @@ type WaterFinaleProps = {
   deviceRef?: Ref<HTMLDivElement>;
   /** The stream running from the outlet down into the glass. */
   pourRef?: Ref<HTMLDivElement>;
-  /** The glass. GlacierExperience scales `[data-glass-fill]` inside it. */
+  /** The glass. GlacierExperience animates `[data-fill-clip]` and
+   * `[data-fill-meniscus]` inside it. */
   glassRef?: Ref<HTMLDivElement>;
   copyRef?: Ref<HTMLDivElement>;
 };
@@ -106,10 +107,14 @@ export function WaterFinale({
 }
 
 /**
- * A plain tumbler. `[data-glass-fill]` is the water: a group, clipped to the
- * interior, scaled from its own base — so the body and its bright surface line
- * rise together and the line is always exactly at the current water level,
- * however full the glass is.
+ * A plain tumbler. The water body and its meniscus are drawn once, at their
+ * final full-glass size and position, and stay that way — the glass fills by
+ * *reveal*, not by transform. `[data-fill-clip]` is a rect inside its own
+ * nested `<clipPath>`; GlacierExperience animates that rect's own `y` and
+ * `height` attributes from the floor of the glass (nothing showing) up to the
+ * top (everything showing). `[data-fill-meniscus]` sits outside that clip and
+ * has its `cy` driven in lockstep, so the bright surface line is never itself
+ * masked by the reveal it is there to mark.
  */
 function Glass() {
   return (
@@ -123,6 +128,12 @@ function Glass() {
         <clipPath id="glass-interior">
           <path d="M27 16 L38.5 128 Q40 132 46 132 L74 132 Q80 132 81.5 128 L93 16 Z" />
         </clipPath>
+        {/* The water level. Starts collapsed to zero height at the floor
+            (y=132, the same bottom the interior path closes on) and is
+            animated open toward the top (y=16, a completely full glass). */}
+        <clipPath id="glass-fill-level">
+          <rect data-fill-clip x="0" y="132" width="120" height="0" />
+        </clipPath>
         <linearGradient id="glass-water" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#dceffa" stopOpacity="0.9" />
           <stop offset="35%" stopColor="#6fbfe6" stopOpacity="0.6" />
@@ -131,18 +142,24 @@ function Glass() {
       </defs>
 
       <g clipPath="url(#glass-interior)">
-        {/* Scaled up from its own base by the timeline. The origin is set there,
-            in viewBox units (`svgOrigin`), because a percentage transform-origin
-            on an SVG element is interpreted differently across engines.
-
-            The body and the surface line are one group sharing one scaleY, so
-            the bright line is always exactly at the current water level —
-            rather than a rectangle that merely grows, this reads as a real
-            meniscus rising with the fill. */}
-        <g data-glass-fill>
+        {/* The body: full glass size, always. What is visible of it at any
+            moment is entirely down to `glass-fill-level` above. */}
+        <g clipPath="url(#glass-fill-level)">
           <rect x="24" y="16" width="72" height="116" fill="url(#glass-water)" />
-          <ellipse cx="60" cy="16" rx="35" ry="2.6" fill="#f4f9fc" fillOpacity="0.55" />
         </g>
+
+        {/* The meniscus. Clipped only to the interior shape, not to the fill
+            level — its position (not its visibility) is what tracks the
+            rising water. */}
+        <ellipse
+          data-fill-meniscus
+          cx="60"
+          cy="132"
+          rx="35"
+          ry="2.6"
+          fill="#f4f9fc"
+          fillOpacity="0.55"
+        />
       </g>
 
       {/* The glass itself, over the water. */}
