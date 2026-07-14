@@ -210,11 +210,30 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
                 <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
                   {benefit.description}
                 </p>
+                {benefit.evidenceNote && (
+                  <p className="mt-4 text-[0.7rem] leading-relaxed text-silver-dim">
+                    {benefit.evidenceNote}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      {/* The result. No pH figure, no mineral count, no before-and-after — the
+          same restraint the scrubbed finale shows, for the same reason. */}
+      <section className="mx-auto max-w-3xl px-6 py-20 md:py-28">
+        <p className="text-[0.7rem] font-medium tracking-[0.35em] text-glacier-300 uppercase">
+          {finale.eyebrow}
+        </p>
+        <h2 className="mt-4 font-display text-4xl leading-tight font-light text-balance text-ice md:text-5xl">
+          {finale.heading}
+        </h2>
+        <p className="mt-6 text-base leading-relaxed text-pretty text-silver md:text-lg">
+          {finale.body}
+        </p>
+      </section>
 
       <FinalCTA variant="static" />
     </main>

@@ -22,10 +22,6 @@ npm run build
 
 npm run frames  # re-extract the glacier frames (needs FFmpeg on the PATH)
 npm run test:e2e
-
-# Exercise the stone-callout system with obviously-fake placeholder data.
-# Never set this in production.
-NEXT_PUBLIC_PREVIEW_ELEMENTS=1 npm run dev
 ```
 
 ## Assets
@@ -83,10 +79,11 @@ the decode budget.
 
 ## Content
 
-All copy, commercial details and the scroll range of every scene live in
-[`src/config/content.ts`](src/config/content.ts). Scene ranges are plain
-percentages of the pinned scroll — `{ inStart: 58, outEnd: 92 }` is literally
-58%–92% — so re-timing the story is an edit, not a refactor.
+All copy, commercial details, the nine internal layers and the scroll range of
+every scene live in [`src/config/content.ts`](src/config/content.ts). Ranges are
+positions on one timeline whose full length is `timelineLength`, and the pin is
+exactly that long — so `{ inStart: 53, outEnd: 56.6 }` is always the same slice of
+the scroll, and re-timing the story is an edit, not a refactor.
 
 **The null rule.** Anything the client has not verified is `null` or an empty
 array, never a stand-in like `₹—` or `example.com`. Every component hides its
@@ -94,8 +91,8 @@ element when the value behind it is missing: no price is configured, so no price
 renders; no buy URL is configured, so no buy button renders. Fill a value in and
 the UI appears on its own.
 
-Still required from the client: the brand name, the product's real name, the
-verified stone list and what each stone does (with sources), founder details,
+Still required from the client: the brand name, what each internal material
+actually *does* (with sources), lab results for any water claim, founder details,
 delivery details, price, buy URL, WhatsApp number, contact details, and the final
 domain (`NEXT_PUBLIC_SITE_URL`).
 
@@ -103,24 +100,46 @@ Nothing on this site may state or imply a medical, mineral, pH, purification or
 certification claim until there is evidence for it. The copy is deliberately
 descriptive rather than functional for that reason.
 
-### The stones
+### The nine layers
 
-`deviceElements` in `content.ts` ships **empty**. The callout system that renders
-it is finished: give it a list of `DeviceElement`s — each with a name, a short
-description, an optional verified function, an anchor point on the device and a
-scroll window — and they appear one at a time beside the device, with a hairline
-connector running from the text to the anchor. Below `lg` the connector is dropped
-and the text sits under the device instead.
+`deviceLayers` in `content.ts` holds the stack the manufacturer's cutaway diagram
+specifies — funnel, Himalayan stones, Japanese stones, jamun wood, silver,
+magnesium, magnet, Korean media stones, zinc. Each has a `description` that says
+what it **is** and where it sits, an `anchor` on the drawing, a side, and a scroll
+window (assigned in order from `LAYER_WALK_START`).
 
-`NEXT_PUBLIC_PREVIEW_ELEMENTS=1` renders `devPreviewElements` so the mechanism can
-be seen without inventing stone names on the public site.
+Each also has an **optional `verifiedFunction`**, which is what it *does*. Every
+one of them is currently undefined, and `DeviceLayerCallout` renders that line only
+when it exists — so filling one in is the entire act of publishing it. A visible
+note under the walk says out loud that the composition is the manufacturer's and
+that the effects are not yet described.
+
+### Benefits: all five are withheld
+
+`verifiedBenefits` ships **empty**, `BenefitsSequence` therefore renders nothing,
+and the benefits act consumes no scroll at all — the journey runs straight from the
+layer walk to the pour. Five claims arrived with the client's reference artwork and
+none of them can be published:
+
+| Claim | Why it is blocked |
+| --- | --- |
+| Regulates blood sugar levels | Medical claim |
+| Enhances insulin sensitivity | Medical claim |
+| Improves digestion | Medical claim |
+| Aids weight management | Medical claim |
+| Rich in nutrients | Mineral-content claim — needs a lab report naming the minerals and their quantities |
+
+The same restraint governs the finale: **no pH value is shown anywhere**, because
+no test result exists to show one from.
 
 ## How it works
 
 `GlacierExperience` pins a full-viewport section and hands ScrollTrigger a single
-100-unit timeline, where one unit is one percent of the scroll. A
-`requestAnimationFrame` loop reads that timeline's progress, turns it into a frame
-index, and draws that frame into a canvas.
+timeline `timelineLength` units long. A `requestAnimationFrame` loop reads that
+timeline's progress, turns it into a frame index, and draws that frame into a
+canvas. The footage is mapped onto the **glacier act alone** — it reaches its last
+frame as the device arrives and holds there behind an opaque backdrop, rather than
+crawling across a pin that is now mostly product.
 
 Three things fall out of that design, and they are the whole point:
 
@@ -157,36 +176,71 @@ actually fill: the 720p source is drawn 1:1 and the compositor does the upscale,
 instead of the CPU resampling a 1.25× (desktop) or 4× (phone) enlargement sixty
 times a second.
 
-The journey: the summit → the glacier and the water source → Gonbo Rangjon, the
-mountain the stones are named for → the descent toward the device → **the device**
-→ the stones inside it → the call to action.
+### The journey
 
-### The device reveal (58%–92%)
+| Units | Scene |
+| --- | --- |
+| 0 – 38 | The summit → the glacier → Gonbo Rangjon → the descent. The footage ends here. |
+| 36 – 53 | **The device**, from outside: it rises, settles, drifts, then comes at the camera and dissolves. |
+| 48 – 88.6 | **How it works** — the cutaway, and the nine-layer walk (53 → 85.4, 3.6 units each). |
+| 88 – … | Benefits. Empty, so this consumes nothing. |
+| 88 – 100 | **The pour** — water leaving the outlet and filling a glass. |
+| 99 – 106 | The call to action. |
+
+### The device reveal
 
 Built from one flat PNG, so everything that reads as depth is a separate layer on
-a separate transform:
-
-- the device rises, settles and drifts (`y`, `scale`, a few degrees of `rotateX`
-  and `rotateY`) against the still-moving glacier behind it;
-- a glacier-blue bloom, a soft ground reflection and two banks of mist sit behind
-  and in front of it;
-- a bar of light sweeps across the copper, masked by `device-mask.png` — the
-  device's own alpha silhouette — so the light is clipped to the product rather
-  than to a rectangle;
-- two copy blocks cross-fade in a single CSS grid cell, so swapping them costs no
-  layout shift.
+a separate transform: the device rises, settles and drifts against the still-moving
+glacier; a bloom, a ground reflection and two banks of mist sit behind and in front
+of it; a bar of light sweeps across the copper, masked by `device-mask.png` — the
+device's own alpha silhouette — so the light is clipped to the product rather than
+to a rectangle. On the way out it scales *up* and blurs, so the cutaway rising
+behind it reads as the inside of the thing we just entered.
 
 **It is deliberately not a turntable.** A single flat PNG has no back and no
 sides, so the tilt stays within a few degrees and reads as parallax. A genuine
 revolving device needs a GLB/GLTF model, a transparent turntable image sequence,
 or a pre-rendered rotation video — none of which exist yet.
 
-Reflection and mist are desktop-only, blur transitions are disabled on mobile, and
-nothing in the scene animates a layout property or runs while it is off screen.
+### The layer walk (`HowItWorks` + `DeviceCutaway`)
 
-Three paths exist, chosen at mount by `useExperienceMode`:
+The cutaway is an **inline SVG**, not a picture. The client's reference is a flat
+raster — nine labels pointing at one image — and a raster cannot be taken apart
+into nine things you can dim, glow and hang a connector line off. So the column is
+drawn, in the site's own palette, with one addressable `<g data-layer>` per
+material and a `<g data-halo>` behind it. (If a clean layered export ever arrives,
+the geometry is one file.)
 
-- **scrub** — the full experience (600vh desktop, 450vh mobile; mobile gets the
+Per layer, inside its window: the other eight drop to `opacity: 0.2`, a halo comes
+up behind the active one, a dot lights on the drawing, a hairline connector runs
+out to its name and description, and the water front arrives at it.
+
+`WaterFlow` is one element animated with **nothing but `yPercent`**, from `-100`
+(entirely above its mask) to `0`. Its gradient is brightest at its own bottom edge,
+so that edge *is* the water's surface, and everything above it reads as wet. One
+composited transform — no height animation, no `clip-path`, no per-frame layout.
+The same component pours into the glass in the finale.
+
+Reverse scrolling is free, everywhere. There is no state machine listening for a
+scroll direction and no "current layer" in React: at any scroll position the whole
+picture — which layer is lit, how far the water has fallen, which words are on
+screen — is a pure function of the timeline's progress.
+
+Below `lg` the connectors are dropped and each callout sits under the drawing
+instead. The walk is a visual sequence, so its content is *also* emitted as a plain
+`sr-only` ordered list — `visibility: hidden` layers are invisible to assistive
+tech, and the nine materials are not decoration.
+
+Reflection, mist and the water droplets are desktop-only, blur transitions are
+disabled on mobile, and nothing in the scene animates a layout property or runs
+while it is off screen.
+
+### Three paths
+
+Chosen at mount by `useExperienceMode`:
+
+- **scrub** — the full experience (~1,170vh desktop, ~850vh mobile — the pin is
+  `viewports × timelineLength`, so it grows if benefits are added; mobile gets the
   smaller frame set and drops the blur and glass effects).
 - **lite** — Data Saver or a low-core / low-memory device: the mp4 plays as a muted
   looping backdrop behind normal stacked sections. No frames are fetched.

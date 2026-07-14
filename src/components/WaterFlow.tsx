@@ -67,8 +67,14 @@ export function WaterFlow({
       {/* Droplets. Each is a full-height wrapper with the drop pinned to its
           bottom edge, so the same `yPercent` trick walks it down the column
           without the drop itself being squashed by a scale. */}
+      {/* `max-md:hidden` matters: the timeline only animates these on desktop, so
+          on a phone they would otherwise sit motionless at the foot of the column. */}
       {Array.from({ length: droplets }, (_, index) => (
-        <div key={index} data-droplet className="absolute inset-x-0 top-0 h-full">
+        <div
+          key={index}
+          data-droplet
+          className="absolute inset-x-0 top-0 h-full max-md:hidden"
+        >
           <span
             className="absolute bottom-0 block h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-ice/80 shadow-[0_0_6px_2px_rgba(220,239,250,0.45)]"
             // Spread across the bore, deterministically — never Math.random(), or
