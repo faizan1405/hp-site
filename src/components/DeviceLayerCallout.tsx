@@ -36,7 +36,15 @@ export function DeviceLayerCallout({
   index,
   total,
 }: DeviceLayerCalloutProps) {
-  const { name, description, verifiedFunction, evidenceNote, anchor, side } = layer;
+  const {
+    name,
+    description,
+    verifiedFunction,
+    sourceNote,
+    verificationStatus,
+    anchor,
+    side,
+  } = layer;
   const isLeft = side === "left";
 
   const counter = `${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
@@ -59,9 +67,13 @@ export function DeviceLayerCallout({
           {verifiedFunction}
         </p>
       )}
-      {evidenceNote && (
+      {/* Source and verification status share one line — a qualifier next to
+          its source, not a separate badge that could be misread as a pass/fail
+          stamp on its own. */}
+      {sourceNote && (
         <p className="mt-2 text-[0.7rem] leading-relaxed text-silver-dim">
-          {evidenceNote}
+          {sourceNote}
+          {verificationStatus && <> · {verificationStatus}</>}
         </p>
       )}
     </>

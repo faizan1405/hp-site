@@ -153,7 +153,12 @@ export function HowItWorks({
               <h3>{layer.name}</h3>
               <p>{layer.description}</p>
               {layer.verifiedFunction && <p>{layer.verifiedFunction}</p>}
-              {layer.evidenceNote && <p>{layer.evidenceNote}</p>}
+              {layer.sourceNote && (
+                <p>
+                  {layer.sourceNote}
+                  {layer.verificationStatus && <> · {layer.verificationStatus}</>}
+                </p>
+              )}
             </li>
           ))}
         </ol>

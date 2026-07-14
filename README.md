@@ -91,10 +91,10 @@ element when the value behind it is missing: no price is configured, so no price
 renders; no buy URL is configured, so no buy button renders. Fill a value in and
 the UI appears on its own.
 
-Still required from the client: the brand name, what each internal material
-actually *does* (with sources), lab results for any water claim, founder details,
-delivery details, price, buy URL, WhatsApp number, contact details, and the final
-domain (`NEXT_PUBLIC_SITE_URL`).
+Still required from the client: the brand name, independent lab results for any
+mineral, pH or ORP change the internal materials are only *intended* to produce
+(see below), founder details, delivery details, price, buy URL, WhatsApp number,
+contact details, and the final domain (`NEXT_PUBLIC_SITE_URL`).
 
 Nothing on this site may state or imply a medical, mineral, pH, purification or
 certification claim until there is evidence for it. The copy is deliberately
@@ -108,11 +108,22 @@ magnesium, magnet, Korean media stones, zinc. Each has a `description` that says
 what it **is** and where it sits, an `anchor` on the drawing, a side, and a scroll
 window (assigned in order from `LAYER_WALK_START`).
 
-Each also has an **optional `verifiedFunction`**, which is what it *does*. Every
-one of them is currently undefined, and `DeviceLayerCallout` renders that line only
-when it exists — so filling one in is the entire act of publishing it. A visible
-note under the walk says out loud that the composition is the manufacturer's and
-that the effects are not yet described.
+Each also has an **optional `verifiedFunction`**, which is what it *does*, plus
+`sourceNote` (which page of the client's product PDF it comes from) and
+`verificationStatus` (how solid that source is — `"mechanical"` down to
+`"lab verification required"`). `DeviceLayerCallout` renders `verifiedFunction`
+only when it exists, and renders `sourceNote`/`verificationStatus` as one small
+qualifying line beneath it, never as a separate pass/fail badge.
+
+All nine are filled in from the client's PDF as of the current data, worded to
+describe what each material **is intended to do** rather than what it has been
+shown to do — sentences like "any mineral or pH change requires laboratory
+confirmation" are kept verbatim because they are honest disclaimers, not claims.
+Four entries in the source PDF (jamun wood, magnesium, magnet, zinc) carried a
+trailing instruction to us — "do not claim X" — appended to the sentence itself;
+that instruction is applied, not printed: only the substantive, non-medical
+sentence ahead of it made it into `verifiedFunction`. See the comment above
+`layerSpecs` in `content.ts` for exactly what was withheld from each and why.
 
 ### Benefits: all five are withheld
 

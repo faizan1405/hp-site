@@ -81,7 +81,13 @@ export type DeviceLayer = {
    */
   verifiedFunction?: string;
   /** Where the above comes from: a lab report, a spec sheet, a supplier. */
-  evidenceNote?: string;
+  sourceNote?: string;
+  /**
+   * How solid that source is — "lab verification required" is not the same
+   * claim as "established general use". Rendered as a small qualifier next to
+   * `sourceNote`, never on its own as a badge that could read as a pass/fail.
+   */
+  verificationStatus?: string;
   /** Point on the cutaway the connector line lands on, in % of its box. */
   anchor: { x: number; y: number };
   /** Which side of the cutaway the text sits on (lg and up). */
@@ -98,76 +104,122 @@ type LayerSpec = Omit<DeviceLayer, "scrollRange">;
 /**
  * Top to bottom, in the order the water meets them. The walk follows this array,
  * so reordering it reorders the scroll — no other file needs to change.
+ *
+ * `description`, `verifiedFunction`, `sourceNote` and `verificationStatus` come
+ * from the client's product PDF, page ranges as cited per item below.
+ *
+ * Four of the client's nine `verifiedFunction` entries (jamun wood, magnesium,
+ * magnet, zinc) arrived with a trailing instruction to us — "do not claim X" /
+ * "do not show Y" — appended to the sentence itself. That instruction is
+ * followed here by its absence, not by its presence: the directive is not
+ * customer-facing copy, so only the substantive, non-medical sentence that
+ * preceded it is kept. Printing "do not claim..." on the live page would be a
+ * leaked internal note, not a description of the product.
  */
 const layerSpecs: LayerSpec[] = [
   {
     id: "funnel",
     name: "Funnel",
-    description:
-      "The opening at the top of the device. Water is poured in here and enters the column below.",
+    description: "Guides incoming water into the device.",
+    verifiedFunction: "Directs and distributes water across the first media layer.",
+    sourceNote: "Mechanical function based on the supplied device design.",
+    verificationStatus: "mechanical",
     anchor: { x: 50, y: 7.5 },
     side: "right",
   },
   {
     id: "himalayan-stones",
     name: "Himalayan stones",
-    description:
-      "A bed of stones associated with the Himalayan landscape, and the first material the water meets.",
+    description: "Natural stone media inspired by the Himalayan region.",
+    verifiedFunction:
+      "Intended to interact with water and may contribute minerals such as calcium, magnesium, potassium and bicarbonates. Any mineral or pH change requires laboratory confirmation.",
+    sourceNote: "Client-provided product PDF, pages 3–5.",
+    verificationStatus: "client-documented; lab verification required",
     anchor: { x: 50, y: 18.5 },
     side: "right",
   },
   {
     id: "japanese-stones",
     name: "Japanese stones",
-    description:
-      "A second stone bed, packed directly beneath the Himalayan layer.",
+    description: "Japanese vanadium alkaline media used as a mineral layer.",
+    verifiedFunction:
+      "Intended to enrich water with alkaline and trace minerals. Actual mineral release and pH change must be confirmed by laboratory testing.",
+    sourceNote: "Client-provided product PDF, pages 9–10.",
+    verificationStatus: "client-documented; lab verification required",
     anchor: { x: 50, y: 26 },
     side: "right",
   },
   {
     id: "jamun-wood",
     name: "Jamun wood",
-    description:
-      "Jamun wood — the timber of the Indian blackberry tree — filling the chamber at the middle of the column.",
+    description: "A traditional natural material used in water-storage practices.",
+    // Trailing sentence in the client's PDF — "Do not display diabetes,
+    // pancreas or other medical claims" — withheld. See the note above.
+    verifiedFunction:
+      "Traditionally used to help maintain water freshness and reduce foul odour or algae.",
+    sourceNote: "Client-provided product PDF, pages 15–16.",
+    verificationStatus: "traditional-use claim; further verification required",
     anchor: { x: 41.7, y: 34.1 },
     side: "right",
   },
   {
     id: "silver",
     name: "Silver",
-    description:
-      "Silver, or chandi, set into the same chamber as the jamun wood.",
+    description: "Silver media used within the water-treatment column.",
+    verifiedFunction:
+      "Silver ions are used in water-treatment systems to help inhibit microbial growth. Product-specific effectiveness and silver concentration require testing.",
+    sourceNote: "Client-provided product PDF, pages 13–14.",
+    verificationStatus: "established general use; product testing required",
     anchor: { x: 58.3, y: 40.9 },
     side: "right",
   },
   {
     id: "magnesium",
     name: "Magnesium",
-    description: "Magnesium, held in the chamber below the wood and the silver.",
+    description: "A magnesium-based mineral media layer.",
+    // Trailing sentence in the client's PDF — "Do not claim that it adds
+    // magnesium or provides body benefits until water testing confirms the
+    // amount released" — withheld. See the note above.
+    verifiedFunction: "Intended as a mineral media layer.",
+    sourceNote: "Client-provided product PDF, pages 21–22.",
+    verificationStatus: "lab verification required",
     anchor: { x: 50, y: 49.9 },
     side: "right",
   },
   {
     id: "magnet",
     name: "Magnet",
-    description:
-      "A magnet seated across the full width of the column, on the path the water takes downward.",
+    description: "A magnetic layer through which the water passes.",
+    // Trailing sentence in the client's PDF — "Do not show health benefits
+    // because the client PDF states that scientific evidence is limited" —
+    // withheld. See the note above.
+    verifiedFunction: "Exposes flowing water to a magnetic field.",
+    sourceNote: "Client-provided product PDF, pages 23–24.",
+    verificationStatus: "limited evidence",
     anchor: { x: 50, y: 55.1 },
     side: "right",
   },
   {
     id: "korean-media",
     name: "Korean media stones",
-    description:
-      "A packed bed of ceramic media stones — the deepest chamber in the column.",
+    description: "Korean alkaline mineral media used inside the device.",
+    verifiedFunction:
+      "Intended to influence water pH and contribute minerals such as calcium, potassium, magnesium and sodium. All pH, mineral and ORP claims require laboratory confirmation.",
+    sourceNote: "Client-provided product PDF, pages 6–8.",
+    verificationStatus: "client-documented; lab verification required",
     anchor: { x: 50, y: 64.8 },
     side: "right",
   },
   {
     id: "zinc",
     name: "Zinc",
-    description:
-      "Zinc. The last material the water passes before it reaches the outlet.",
+    description: "A zinc-based trace-mineral media layer.",
+    // Trailing sentence in the client's PDF — "Do not claim zinc release or
+    // health benefits until laboratory testing confirms zinc in the treated
+    // water" — withheld. See the note above.
+    verifiedFunction: "Intended as a trace-mineral media layer.",
+    sourceNote: "Client-provided product PDF, pages 17–18.",
+    verificationStatus: "lab verification required",
     anchor: { x: 50, y: 79.4 },
     side: "right",
   },

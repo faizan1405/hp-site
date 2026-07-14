@@ -182,9 +182,10 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
                   {layer.verifiedFunction}
                 </p>
               )}
-              {layer.evidenceNote && (
+              {layer.sourceNote && (
                 <p className="mt-2 text-[0.7rem] leading-relaxed text-silver-dim">
-                  {layer.evidenceNote}
+                  {layer.sourceNote}
+                  {layer.verificationStatus && <> · {layer.verificationStatus}</>}
                 </p>
               )}
             </li>
