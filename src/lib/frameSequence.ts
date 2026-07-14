@@ -5,9 +5,12 @@ import type { FrameSet } from "@/config/content";
  *
  * The contract this class exists to honour: **the site is never held hostage by
  * the frame set.** It loads a small priority head — enough to cover the opening
- * of the scroll — reports ready, and streams the remaining frames in behind the
- * live experience. A visitor who scrolls before the stream finishes sees the
- * nearest frame that has actually arrived, never a blank canvas and never a stall.
+ * of the scroll — reports ready, and keeps a bounded window of decoded frames
+ * around wherever the visitor currently is. A visitor who scrolls before a
+ * frame has arrived sees the nearest frame that has actually decoded, never a
+ * blank canvas and never a stall — and a visitor who scrolls far away has the
+ * frames behind them evicted, so the sequence never holds more than a few dozen
+ * decoded bitmaps at once regardless of how long it has been running.
  *
  * It is deliberately framework-free: no React, no state, no re-renders. The only
  * things that escape are the callbacks and `nearest()`.
@@ -24,7 +27,20 @@ export function frameUrl(set: FrameSet, index: number): string {
  * arrives while the visitor is still reading scene one.
  */
 export function priorityCount(set: FrameSet): number {
-  return Math.min(20, Math.max(6, Math.ceil(set.count * 0.08)));
+  return Math.min(15, Math.max(10, Math.ceil(set.count * 0.08)));
+}
+
+/**
+ * How many decoded frames stay resident at once. A full sequence decoded at
+ * once is real memory — 1280×720 alone is ~3.5MB of raw RGBA per frame, so all
+ * 180 desktop frames held forever is the better part of 600MB — and none of it
+ * buys anything once the visitor has scrolled away from it. This caps the
+ * window to a slice proportional to the sequence's own length, so a fast
+ * scroll always has its immediate neighbourhood ready without the whole set
+ * ever being resident together.
+ */
+export function cacheSize(set: FrameSet): number {
+  return Math.min(40, Math.max(20, Math.round(set.count * 0.2)));
 }
 
 /**
@@ -34,6 +50,19 @@ export function priorityCount(set: FrameSet): number {
  * requests that were already in flight for somewhere else in the sequence.
  */
 const CONCURRENCY = 6;
+
+/**
+ * `createImageBitmap` decodes off the main thread and exposes `.close()` for
+ * deterministic, immediate memory release — unlike an `HTMLImageElement`,
+ * which only *might* be reclaimed whenever the GC gets around to it. Feature
+ * detection happens once: Safari has only supported it from a Blob since 15.4,
+ * so the `<img>` path below stays as the universal fallback.
+ */
+const supportsImageBitmap =
+  typeof window !== "undefined" && typeof window.createImageBitmap === "function";
+
+/** Either kind of decoded frame this module ever hands back to the canvas. */
+export type DecodedFrame = ImageBitmap | HTMLImageElement;
 
 type LoaderOptions = {
   /** 0–1, priority phase only: what the loading screen shows. */
@@ -53,43 +82,47 @@ export class FrameSequenceLoader {
   readonly set: FrameSet;
 
   private readonly options: LoaderOptions;
-  private readonly images: (HTMLImageElement | null)[];
-  /** Frames not yet requested. Requested ones leave the set immediately. */
-  private readonly queued: Set<number>;
+  private readonly limit: number;
 
-  /** Where the scrubber is right now, as a frame index. Steers the queue. */
+  /**
+   * The resident window. Insertion order roughly tracks fetch order, but
+   * eviction is driven by distance from the playhead, not recency — a
+   * scrubber revisits old ground constantly, and "far from here" is a better
+   * predictor of "not needed soon" than "not fetched recently".
+   */
+  private readonly cache = new Map<number, DecodedFrame>();
+  /** Requested but not yet settled, so `ensureWindow` never double-fetches. */
+  private readonly inFlight = new Set<number>();
+
+  /** Where the scrubber is right now, as a frame index. Steers the window. */
   private playhead = 0;
-  private loadedCount = 0;
   private destroyed = false;
 
   constructor(set: FrameSet, options: LoaderOptions) {
     this.set = set;
     this.options = options;
-    this.images = new Array<HTMLImageElement | null>(set.count).fill(null);
-    this.queued = new Set(Array.from({ length: set.count }, (_, i) => i));
+    this.limit = cacheSize(set);
   }
 
   /**
-   * Loads the priority head, reveals the site, then streams the remainder. The
-   * two phases differ only in which frames they pull and who is told about them.
+   * Loads the priority head, reveals the site, then opens the progressive
+   * window around the playhead (frame 0 at start).
    */
   async start(): Promise<void> {
     const head = priorityCount(this.set);
-    let issued = 0;
+    const headIndices = Array.from({ length: head }, (_, i) => i);
+
     let settled = 0;
     let failed = 0;
 
-    await this.pool(
-      () => (issued < head ? issued++ : null),
-      async (index) => {
-        const ok = await this.fetch(index);
-        if (!ok) failed += 1;
-        // Count completions, not indices: six workers finish out of order, and a
-        // progress bar that goes backwards is worse than no progress bar.
-        settled += 1;
-        this.options.onProgress(settled / head);
-      },
-    );
+    await this.runPool(headIndices, async (index) => {
+      const ok = await this.fetch(index);
+      if (!ok) failed += 1;
+      // Count completions, not indices: six workers finish out of order, and a
+      // progress bar that goes backwards is worse than no progress bar.
+      settled += 1;
+      this.options.onProgress(settled / head);
+    });
 
     if (this.destroyed) return;
 
@@ -103,55 +136,44 @@ export class FrameSequenceLoader {
     }
 
     this.options.onReady();
-
-    // The rest, nearest-to-the-playhead first, for as long as the component lives.
-    await this.pool(
-      () => this.takeNearestQueued(),
-      async (index) => {
-        await this.fetch(index);
-      },
-    );
+    this.ensureWindow();
   }
 
   /**
-   * Tell the loader where the visitor is. A fast scroll deep into the page
-   * re-points the queue at what is on screen instead of plodding through the
-   * sequence from the top.
+   * Tell the loader where the visitor is. Re-centres the resident window on
+   * the new position: fetches whatever is newly in range and evicts whatever
+   * just fell out of it.
    */
   setPlayhead(index: number): void {
+    if (index === this.playhead) return;
     this.playhead = index;
+    this.ensureWindow();
   }
 
   /**
-   * The best frame available for `index`: the frame itself if it has loaded, else
-   * the nearest loaded neighbour, checked backwards first so a gap reads as a held
-   * frame rather than a jump ahead. Null only while the sequence is still empty.
+   * The best frame available for `index`: the frame itself if it is resident,
+   * else the nearest resident neighbour, checked backwards first so a gap
+   * reads as a held frame rather than a jump ahead. Null only while the
+   * sequence is still empty.
    */
-  nearest(index: number): HTMLImageElement | null {
-    const exact = this.images[index];
+  nearest(index: number): DecodedFrame | null {
+    const exact = this.cache.get(index);
     if (exact) return exact;
 
     for (let offset = 1; offset < this.set.count; offset += 1) {
-      const before = this.images[index - offset];
+      const before = this.cache.get(index - offset);
       if (before) return before;
-      const after = this.images[index + offset];
+      const after = this.cache.get(index + offset);
       if (after) return after;
     }
 
     return null;
   }
 
-  /** True once every frame the sequence will ever have is in memory. */
-  get complete(): boolean {
-    return this.loadedCount === this.set.count;
-  }
-
   destroy(): void {
     this.destroyed = true;
-    this.queued.clear();
-    // Drop the decoded bitmaps. 180 frames of 1280×720 is real memory, and the
-    // fallback that replaces this component has no use for any of it.
-    this.images.fill(null);
+    this.inFlight.clear();
+    for (const index of this.cache.keys()) this.evict(index);
   }
 
   /* ------------------------------------------------------------------ *
@@ -159,71 +181,129 @@ export class FrameSequenceLoader {
    * ------------------------------------------------------------------ */
 
   /**
-   * Runs `work` over whatever `next` hands out, `CONCURRENCY` at a time, until it
-   * hands out null. `next` is consulted at the last possible moment, which is what
-   * lets the progressive phase re-target the playhead between every single frame.
+   * Fetches whatever indices within `limit`-radius of the playhead are
+   * missing, nearest first, and drops whatever fell outside that radius (or
+   * beyond the hard cap, in case the radius itself outgrew it).
    */
-  private async pool(
-    next: () => number | null,
+  private ensureWindow(): void {
+    const radius = Math.floor(this.limit / 2);
+    const lo = Math.max(0, this.playhead - radius);
+    const hi = Math.min(this.set.count - 1, this.playhead + radius);
+
+    const needed: number[] = [];
+    for (let index = lo; index <= hi; index += 1) {
+      if (!this.cache.has(index) && !this.inFlight.has(index)) needed.push(index);
+    }
+    needed.sort(
+      (a, b) => Math.abs(a - this.playhead) - Math.abs(b - this.playhead),
+    );
+
+    if (needed.length > 0) {
+      void this.runPool(needed, async (index) => {
+        await this.fetch(index);
+      });
+    }
+
+    for (const index of this.cache.keys()) {
+      if (index < lo || index > hi) this.evict(index);
+    }
+
+    // The window itself can hold more than `limit` slots at its edges once it
+    // grows past the sequence's own bounds; the cap is enforced independently
+    // so it holds regardless of where the playhead sits.
+    if (this.cache.size > this.limit) {
+      const overflow = [...this.cache.keys()].sort(
+        (a, b) => Math.abs(b - this.playhead) - Math.abs(a - this.playhead),
+      );
+      while (this.cache.size > this.limit) {
+        const index = overflow.shift();
+        if (index === undefined) break;
+        this.evict(index);
+      }
+    }
+  }
+
+  /** Drops a resident frame and releases its memory immediately if possible. */
+  private evict(index: number): void {
+    const frame = this.cache.get(index);
+    this.cache.delete(index);
+    if (frame && "close" in frame) frame.close();
+  }
+
+  /**
+   * Runs `work` over `indices`, `CONCURRENCY` at a time. Indices are consumed
+   * in the order given, so callers that want nearest-first behaviour sort
+   * before calling.
+   */
+  private async runPool(
+    indices: number[],
     work: (index: number) => Promise<void>,
   ): Promise<void> {
+    let cursor = 0;
+
     const worker = async (): Promise<void> => {
       for (;;) {
         if (this.destroyed) return;
-        const index = next();
-        if (index === null) return;
+        const index = indices[cursor];
+        cursor += 1;
+        if (index === undefined) return;
+        if (this.cache.has(index) || this.inFlight.has(index)) continue;
         await work(index);
       }
     };
 
     await Promise.all(
-      Array.from({ length: Math.min(CONCURRENCY, this.set.count) }, worker),
+      Array.from({ length: Math.min(CONCURRENCY, indices.length) }, worker),
     );
   }
 
-  /**
-   * Pulls the queued frame closest to the playhead. Linear over the queue, which
-   * peaks at a couple of hundred entries — cheaper in practice than maintaining a
-   * heap that would have to be rebuilt every time the playhead moved.
-   */
-  private takeNearestQueued(): number | null {
-    let best: number | null = null;
-    let bestDistance = Infinity;
-
-    for (const index of this.queued) {
-      const distance = Math.abs(index - this.playhead);
-      if (distance < bestDistance) {
-        best = index;
-        bestDistance = distance;
-      }
-    }
-
-    if (best !== null) this.queued.delete(best);
-    return best;
-  }
-
-  /** Resolves true if the frame is now decoded and drawable. */
+  /** Resolves true if the frame is now decoded and resident. */
   private async fetch(index: number): Promise<boolean> {
-    this.queued.delete(index);
-
-    const image = new Image();
-    image.decoding = "async";
-    image.src = frameUrl(this.set, index);
+    this.inFlight.add(index);
 
     try {
-      await imageReady(image);
-      if (this.destroyed) return false;
+      const frame = await loadFrame(frameUrl(this.set, index));
+      this.inFlight.delete(index);
 
-      this.images[index] = image;
-      this.loadedCount += 1;
+      if (this.destroyed) {
+        if ("close" in frame) frame.close();
+        return false;
+      }
+
+      this.cache.set(index, frame);
       this.options.onFrameLoaded(index);
       return true;
     } catch {
       // A single dropped frame is not worth a retry: `nearest()` covers the hole
       // and a retry would compete with frames the visitor has not reached yet.
+      this.inFlight.delete(index);
       return false;
     }
   }
+}
+
+/**
+ * Decodes one frame. `createImageBitmap` is preferred where supported — it
+ * decodes off the main thread and can be `.close()`d the instant it is
+ * evicted. Everything else falls back to the classic `<img>` + `decode()`
+ * dance, same as before.
+ */
+async function loadFrame(url: string): Promise<DecodedFrame> {
+  if (supportsImageBitmap) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+    const blob = await response.blob();
+    return window.createImageBitmap(blob);
+  }
+
+  return loadImageElement(url);
+}
+
+function loadImageElement(url: string): Promise<HTMLImageElement> {
+  const image = new Image();
+  image.decoding = "async";
+  image.src = url;
+  return imageReady(image).then(() => image);
 }
 
 /**

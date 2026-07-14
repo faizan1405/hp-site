@@ -2,7 +2,7 @@
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { type FrameSet, frames } from "@/config/content";
-import { FrameSequenceLoader } from "@/lib/frameSequence";
+import { type DecodedFrame, FrameSequenceLoader } from "@/lib/frameSequence";
 
 /** Give up on the sequence after this long and fall back to the poster. */
 const PRIORITY_TIMEOUT_MS = 15_000;
@@ -10,9 +10,12 @@ const PRIORITY_TIMEOUT_MS = 15_000;
 /**
  * Retina is not worth 4× the fill rate for a full-screen photographic backdrop
  * that is already softened by two gradient scrims and a grain overlay — and on a
- * 3× phone it is the difference between a smooth scrub and a slideshow.
+ * 3× phone it is the difference between a smooth scrub and a slideshow. Mobile
+ * gets a lower ceiling still: a 3× phone stopped at 1.5 fills noticeably fewer
+ * pixels per paint than one stopped at 2, and it is the weaker GPU of the two.
  */
-const MAX_DEVICE_PIXEL_RATIO = 2;
+const MAX_DEVICE_PIXEL_RATIO_DESKTOP = 2;
+const MAX_DEVICE_PIXEL_RATIO_MOBILE = 1.5;
 
 /** Matches the `isDesktop` / `isMobile` split in GlacierExperience's matchMedia. */
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -56,7 +59,7 @@ export function useFrameSequence({ enabled, canvasRef }: Options): Result {
   // would re-render the entire scene tree sixty times a second.
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const lastIndexRef = useRef(-1);
-  const lastImageRef = useRef<HTMLImageElement | null>(null);
+  const lastImageRef = useRef<DecodedFrame | null>(null);
   const dirtyRef = useRef(true);
 
   /* ------------------------------------------------------------------ *
@@ -65,7 +68,7 @@ export function useFrameSequence({ enabled, canvasRef }: Options): Result {
 
   /** Draws `image` over the whole canvas with `object-fit: cover` semantics. */
   const paint = useCallback(
-    (image: HTMLImageElement) => {
+    (image: DecodedFrame) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -80,9 +83,15 @@ export function useFrameSequence({ enabled, canvasRef }: Options): Result {
       const { width: cw, height: ch } = canvas;
       if (cw === 0 || ch === 0) return;
 
-      const scale = Math.max(cw / image.naturalWidth, ch / image.naturalHeight);
-      const dw = image.naturalWidth * scale;
-      const dh = image.naturalHeight * scale;
+      // `ImageBitmap` has no `naturalWidth`/`naturalHeight` — both kinds agree
+      // on plain `width`/`height`, which is what makes this function work for
+      // either decode path unmodified.
+      const iw = image.width;
+      const ih = image.height;
+
+      const scale = Math.max(cw / iw, ch / ih);
+      const dw = iw * scale;
+      const dh = ih * scale;
 
       context.drawImage(image, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
 
@@ -200,8 +209,11 @@ export function useFrameSequence({ enabled, canvasRef }: Options): Result {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const maxDpr =
+      set === frames.mobile ? MAX_DEVICE_PIXEL_RATIO_MOBILE : MAX_DEVICE_PIXEL_RATIO_DESKTOP;
+
     const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
+      const ratio = Math.min(window.devicePixelRatio || 1, maxDpr);
       const boxWidth = canvas.clientWidth * ratio;
       const boxHeight = canvas.clientHeight * ratio;
       if (boxWidth === 0 || boxHeight === 0) return;
@@ -245,7 +257,7 @@ export function useFrameSequence({ enabled, canvasRef }: Options): Result {
     observer.observe(canvas);
 
     return () => observer.disconnect();
-  }, [enabled, canvasRef, paint, set.width, set.height]);
+  }, [enabled, canvasRef, paint, set, set.width, set.height]);
 
   return { status, progress, set, draw };
 }
