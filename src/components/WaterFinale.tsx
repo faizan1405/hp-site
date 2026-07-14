@@ -106,9 +106,10 @@ export function WaterFinale({
 }
 
 /**
- * A plain tumbler. `[data-glass-fill]` is the water: one rect, clipped to the
- * interior, scaled from its own base — so the gradient's bright top edge is
- * always exactly at the surface, however full the glass is.
+ * A plain tumbler. `[data-glass-fill]` is the water: a group, clipped to the
+ * interior, scaled from its own base — so the body and its bright surface line
+ * rise together and the line is always exactly at the current water level,
+ * however full the glass is.
  */
 function Glass() {
   return (
@@ -132,15 +133,16 @@ function Glass() {
       <g clipPath="url(#glass-interior)">
         {/* Scaled up from its own base by the timeline. The origin is set there,
             in viewBox units (`svgOrigin`), because a percentage transform-origin
-            on an SVG element is interpreted differently across engines. */}
-        <rect
-          data-glass-fill
-          x="24"
-          y="16"
-          width="72"
-          height="116"
-          fill="url(#glass-water)"
-        />
+            on an SVG element is interpreted differently across engines.
+
+            The body and the surface line are one group sharing one scaleY, so
+            the bright line is always exactly at the current water level —
+            rather than a rectangle that merely grows, this reads as a real
+            meniscus rising with the fill. */}
+        <g data-glass-fill>
+          <rect x="24" y="16" width="72" height="116" fill="url(#glass-water)" />
+          <ellipse cx="60" cy="16" rx="35" ry="2.6" fill="#f4f9fc" fillOpacity="0.55" />
+        </g>
       </g>
 
       {/* The glass itself, over the water. */}

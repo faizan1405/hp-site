@@ -584,16 +584,23 @@ export function GlacierExperience() {
           );
         }
 
-        // The pour starts as the device settles and runs until the scene leaves.
-        const pourStart = finale.range.inEnd - 1;
-        const pourSpan = finale.range.outStart - pourStart;
+        // The pour and the fill each own a dedicated, non-overlapping window
+        // (see the FINALE_* constants in content.ts) — the stream arrives
+        // first, THEN the glass rises, and only once it has held full for a
+        // beat does `finale.range.outStart` arrive and the scene start to
+        // leave. Collapsing these back into one derived span is exactly what
+        // previously let the exit start while the glass was still mid-fill.
+        const { pour, fill } = finale;
 
         if (finalePourRef.current) {
+          // The stream fills its own short pour box once, and is left at
+          // full — "the moment the stream reaches the glass" then simply
+          // holds, unanimated, for the whole fill that follows.
           timeline.fromTo(
             finalePourRef.current.querySelectorAll("[data-stream]"),
             { yPercent: -100 },
-            { yPercent: 0, duration: pourSpan * 0.45, ease: "power1.in" },
-            pourStart,
+            { yPercent: 0, duration: pour.end - pour.start, ease: "power1.in" },
+            pour.start,
           );
         }
 
@@ -601,19 +608,23 @@ export function GlacierExperience() {
           finaleGlassRef.current?.querySelector("[data-glass-fill]") ?? null;
 
         if (glassFill) {
+          // The level inside the glass. `ease: "none"` over its own dedicated
+          // window makes the rise a direct, one-to-one function of scroll —
+          // scroll a third of the way through `fill` and the glass is a third
+          // full, in either direction — rather than a GSAP flourish riding on
+          // top of an already-scrubbed timeline.
           timeline.fromTo(
             glassFill,
             { scaleY: 0 },
             {
               scaleY: 0.72,
-              // In viewBox units. A percentage transform-origin on an SVG element
-              // is not interpreted the same way by every engine; this is.
+              // In viewBox units. A percentage transform-origin on an SVG
+              // element is not interpreted the same way by every engine; this is.
               svgOrigin: "60 132",
-              duration: pourSpan * 0.75,
-              ease: "power1.out",
+              duration: fill.end - fill.start,
+              ease: "none",
             },
-            // Begins once the stream has actually reached the rim.
-            pourStart + pourSpan * 0.3,
+            fill.start,
           );
         }
 

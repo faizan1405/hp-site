@@ -184,8 +184,11 @@ times a second.
 | 36 – 53 | **The device**, from outside: it rises, settles, drifts, then comes at the camera and dissolves. |
 | 48 – 88.6 | **How it works** — the cutaway, and the nine-layer walk (53 → 85.4, 3.6 units each). |
 | 88 – … | Benefits. Empty, so this consumes nothing. |
-| 88 – 100 | **The pour** — water leaving the outlet and filling a glass. |
-| 99 – 106 | The call to action. |
+| 88 – 93 | **The finale** settles: device and copy fade in. |
+| 92 – 94 | **Pour** — the stream crosses from the outlet into the glass. |
+| 94 – 100 | **Fill** — the glass rises, one-to-one with scroll (`ease: "none"`). |
+| 101 – 104 | The finale exits — a full unit after the glass finished filling. |
+| 103 – 108 | The call to action fades in and holds. |
 
 ### The device reveal
 
@@ -239,7 +242,7 @@ while it is off screen.
 
 Chosen at mount by `useExperienceMode`:
 
-- **scrub** — the full experience (~1,170vh desktop, ~850vh mobile — the pin is
+- **scrub** — the full experience (~1,210vh desktop, ~880vh mobile — the pin is
   `viewports × timelineLength`, so it grows if benefits are added; mobile gets the
   smaller frame set and drops the blur and glass effects).
 - **lite** — Data Saver or a low-core / low-memory device: the mp4 plays as a muted

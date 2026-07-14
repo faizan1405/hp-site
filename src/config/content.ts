@@ -36,7 +36,7 @@ export type ScrollRange = {
  * exactly `timelineLength` units long — so a range of 55–58 is always the same
  * slice of the scroll, at every breakpoint, however many benefits exist.
  *
- *    0 ──── 38 ─────── 53 ──────────── 85.4 ──── 88 ──── 99 ─── 106
+ *    0 ──── 38 ─────── 53 ──────────── 85.4 ──── 88 ──── 103 ── 110
  *    │ glacier │ device │  layer walk   │ finale │  cta  │
  *
  * `timelineLength` grows when verified benefits are added (see BENEFIT_SPAN),
@@ -233,11 +233,57 @@ export const benefits: Benefit[] = verifiedBenefits.map((spec, index) => {
 /** Where the benefits act ends — equal to its start while there are none. */
 const BENEFITS_END = BENEFITS_START + verifiedBenefits.length * BENEFIT_SPAN;
 
+/* -------------------------------------------------------------------------- *
+ * THE FINALE'S OWN TIMING
+ *
+ * Broken into named spans, rather than one hand-tuned range, because the pour
+ * and the fill are not decorative — they are the two things this scene exists
+ * to show in order: the stream arrives, THEN the glass rises, and only once it
+ * is visibly full does the scene hand off to the CTA. Collapsing any of this
+ * back into a single `range` is what previously let the exit start while the
+ * glass was still mid-fill.
+ * -------------------------------------------------------------------------- */
+
+/** How long the copy and device take to settle before the pour begins. */
+const FINALE_SETTLE_SPAN = 5;
+
+/** How long the stream takes to visibly cross from the outlet into the glass. */
+const FINALE_POUR_SPAN = 2;
+
+/**
+ * How much scroll it takes the glass to fill, once the stream has arrived.
+ * Scrubbed at `ease: "none"` in GlacierExperience, so the water level is a
+ * direct, one-to-one function of scroll position — in both directions.
+ */
+const FINALE_FILL_SPAN = 6;
+
+/** How long the full glass holds before the scene starts to leave. */
+const FINALE_FILL_HOLD = 1;
+
+/** How long the finale takes to fade out once it starts leaving. */
+const FINALE_EXIT_SPAN = 3;
+
+/** How long the CTA takes to fade in, once the finale starts its exit. */
+const CTA_SPAN = 5;
+
+// The pour begins a beat before the copy has fully settled — exactly as the
+// device settled a beat before its own copy did in the scene before this one.
+const FINALE_POUR_START = BENEFITS_END + FINALE_SETTLE_SPAN - 1;
+const FINALE_POUR_END = FINALE_POUR_START + FINALE_POUR_SPAN;
+const FINALE_FILL_END = FINALE_POUR_END + FINALE_FILL_SPAN;
+const FINALE_OUT_START = FINALE_FILL_END + FINALE_FILL_HOLD;
+const FINALE_OUT_END = FINALE_OUT_START + FINALE_EXIT_SPAN;
+
+// The CTA overlaps the finale's own exit by design — the same cross-fade
+// every other scene boundary on this page uses — but never starts before the
+// glass has been sitting full for a whole `FINALE_FILL_HOLD` unit.
+const CTA_IN_START = FINALE_OUT_START + 2;
+
 /**
  * Total length of the pinned timeline. Grows with the benefits, and the pin
  * grows with it, so adding a card never speeds anything else up.
  */
-export const timelineLength = BENEFITS_END + 18;
+export const timelineLength = CTA_IN_START + CTA_SPAN + 2;
 
 /**
  * Length of the pin, as multiples of the viewport height, before the timeline's
@@ -458,6 +504,12 @@ export const scenes = {
    *
    * No pH figure, no mineral count, no "before and after" — the client has
    * supplied no test results, so the shot is the water and nothing else.
+   *
+   * Three beats, in order, each with its own window: the stream **pours**
+   * from the outlet to the glass; the level inside the glass then **fills**,
+   * scrubbed one-to-one with scroll; only once it has held full for
+   * `FINALE_FILL_HOLD` units does the scene's own `range.outStart` arrive and
+   * the CTA begin its cross-fade in.
    */
   finale: {
     eyebrow: "The result",
@@ -466,10 +518,18 @@ export const scenes = {
     glassAlt: "A glass filling with water poured from the device",
     range: {
       inStart: BENEFITS_END,
-      inEnd: BENEFITS_END + 5,
-      outStart: BENEFITS_END + 9,
-      outEnd: BENEFITS_END + 12,
+      inEnd: BENEFITS_END + FINALE_SETTLE_SPAN,
+      outStart: FINALE_OUT_START,
+      outEnd: FINALE_OUT_END,
     } satisfies ScrollRange,
+
+    /** The stream's own window: begins just before the copy settles, and has
+     * visibly reached the glass by the time this ends. */
+    pour: { start: FINALE_POUR_START, end: FINALE_POUR_END },
+
+    /** The glass's fill level: begins the instant the stream arrives, and is
+     * fully poured — one-to-one with scroll — by the time this ends. */
+    fill: { start: FINALE_POUR_END, end: FINALE_FILL_END },
   },
 
   /** Scene 9 — enquiry / purchase. */
@@ -482,8 +542,8 @@ export const scenes = {
     whatsappMessage: `Hi, I'd like to enquire about the ${product.name}.`,
     /** No exit: the CTA is the last thing on the page and must stay on screen. */
     range: {
-      inStart: BENEFITS_END + 11,
-      inEnd: BENEFITS_END + 16,
+      inStart: CTA_IN_START,
+      inEnd: CTA_IN_START + CTA_SPAN,
       outStart: timelineLength,
       outEnd: timelineLength,
     } satisfies ScrollRange,
