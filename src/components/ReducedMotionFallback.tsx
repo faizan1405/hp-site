@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { FinalCTA } from "@/components/FinalCTA";
+import { SiteFooter } from "@/components/SiteFooter";
 import {
   assets,
   benefits,
@@ -237,6 +238,8 @@ export function ReducedMotionFallback({ background }: FallbackProps) {
       </section>
 
       <FinalCTA variant="static" />
+
+      <SiteFooter />
     </main>
   );
 }

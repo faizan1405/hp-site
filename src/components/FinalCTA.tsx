@@ -34,7 +34,9 @@ const buttonBase =
  */
 export function FinalCTA({ ref, variant }: FinalCTAProps) {
   const isOverlay = variant === "overlay";
-  const hasContact = Boolean(contact.email || contact.phone || contact.address);
+  const hasContact = Boolean(
+    contact.email || contact.phone || contact.address || contact.hours,
+  );
 
   return (
     <section
@@ -135,6 +137,7 @@ export function FinalCTA({ ref, variant }: FinalCTAProps) {
                 </a>
               )}
               {contact.address && <span>{contact.address}</span>}
+              {contact.hours && <span>{contact.hours}</span>}
             </address>
           )}
         </div>

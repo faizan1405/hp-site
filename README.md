@@ -94,7 +94,8 @@ the UI appears on its own.
 Still required from the client: the brand name, independent lab results for any
 mineral, pH or ORP change the internal materials are only *intended* to produce
 (see below), founder details, delivery details, price, buy URL, WhatsApp number,
-contact details, and the final domain (`NEXT_PUBLIC_SITE_URL`).
+and the final domain (`NEXT_PUBLIC_SITE_URL`). Contact details (email, phone,
+address, hours) are set in `contact` in `src/config/content.ts`.
 
 Nothing on this site may state or imply a medical, mineral, pH, purification or
 certification claim until there is evidence for it. The copy is deliberately

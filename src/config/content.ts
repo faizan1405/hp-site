@@ -655,10 +655,39 @@ export const socialProof = {
 } as const;
 
 export const contact = {
-  /** TODO(client): a real inbox, phone and address. */
-  email: null as string | null,
-  phone: null as string | null,
-  address: null as string | null,
+  email: "info.himalayasparsh@gmail.com" as string | null,
+  phone: "7095007500" as string | null,
+  address: "B. No. 962, Sector 28, Gurugram, Haryana – 122022" as string | null,
+  hours: "Open 24/7" as string | null,
+} as const;
+
+/**
+ * The `/about` page's own WhatsApp link. Kept separate from `commerce`, which
+ * still has no confirmed enquiry number — filling that one in would also turn
+ * on the homepage's purchase-flow WhatsApp button, which is not this page's
+ * call to make.
+ */
+export const aboutWhatsappHref: string | null = contact.phone
+  ? `https://wa.me/91${contact.phone}?text=${encodeURIComponent(
+      "Hi, I'd like to know more about Himalaya Sparsh.",
+    )}`
+  : null;
+
+/** The site's persistent top navigation. */
+export const nav = {
+  links: [
+    { label: "Home", href: "/" },
+    { label: "About", href: "/about" },
+  ],
+} as const;
+
+/** Copy for the standalone `/about` page — kept out of the homepage's scroll timeline. */
+export const about = {
+  eyebrow: "About",
+  heading: "About Himalaya Sparsh",
+  intro:
+    "Himalaya Sparsh presents a thoughtfully designed water-converter device inspired by the natural journey of Himalayan water. The device combines multiple internal media layers to create a unique water experience for everyday use.",
+  contactHeading: "Get in touch",
 } as const;
 
 export const seo = {

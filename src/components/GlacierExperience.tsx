@@ -10,6 +10,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { ProductReveal } from "@/components/ProductReveal";
 import { ReducedMotionFallback } from "@/components/ReducedMotionFallback";
 import { ScrollCanvas } from "@/components/ScrollCanvas";
+import { SiteFooter } from "@/components/SiteFooter";
 import { StoryOverlay } from "@/components/StoryOverlay";
 import { WaterFinale } from "@/components/WaterFinale";
 import {
@@ -978,6 +979,9 @@ export function GlacierExperience() {
           {/* Scene 9 — enquiry / purchase. */}
           <FinalCTA ref={ctaRef} variant="overlay" />
         </section>
+
+        {/* Below the pin: reached once the scrubbed timeline has run out. */}
+        <SiteFooter />
       </main>
     </>
   );

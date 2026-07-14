@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Geist } from "next/font/google";
+import { SiteNav } from "@/components/SiteNav";
 import { assets, brand, product, scenes, seo, siteName } from "@/config/content";
 import "./globals.css";
 
@@ -96,7 +97,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <SiteNav />
+        {children}
+      </body>
     </html>
   );
 }
