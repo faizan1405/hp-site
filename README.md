@@ -115,15 +115,20 @@ Each also has an **optional `verifiedFunction`**, which is what it *does*, plus
 only when it exists, and renders `sourceNote`/`verificationStatus` as one small
 qualifying line beneath it, never as a separate pass/fail badge.
 
-All nine are filled in from the client's PDF as of the current data, worded to
-describe what each material **is intended to do** rather than what it has been
-shown to do — sentences like "any mineral or pH change requires laboratory
-confirmation" are kept verbatim because they are honest disclaimers, not claims.
-Four entries in the source PDF (jamun wood, magnesium, magnet, zinc) carried a
-trailing instruction to us — "do not claim X" — appended to the sentence itself;
-that instruction is applied, not printed: only the substantive, non-medical
-sentence ahead of it made it into `verifiedFunction`. See the comment above
-`layerSpecs` in `content.ts` for exactly what was withheld from each and why.
+All nine are filled in with the client's own copy, kept verbatim and split at its
+natural sentence boundary — the first sentence (what the layer *is*) into
+`description`, the second (what it is designed or intended to do) into
+`verifiedFunction`. None of the nine states a diabetes, blood-sugar,
+digestion-treatment, blood-pressure, detox or immunity claim, an exact pH value,
+or an exact mineral quantity — the boundaries this project works within.
+
+This wording is a marketing-copy revision of an earlier, more heavily-disclaimed
+draft, and it is less hedged than what it replaced: the earlier draft carried an
+inline clause like "any mineral or pH change requires laboratory confirmation" on
+several stones, and this one does not. That caveat has not disappeared — it now
+lives entirely in `verificationStatus` (`"client-documented; lab verification
+required"`, `"limited evidence"`, and so on) rather than inside the sentence
+itself. See the comment above `layerSpecs` in `content.ts`.
 
 ### Benefits: all five are withheld
 

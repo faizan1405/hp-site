@@ -105,23 +105,35 @@ type LayerSpec = Omit<DeviceLayer, "scrollRange">;
  * Top to bottom, in the order the water meets them. The walk follows this array,
  * so reordering it reorders the scroll — no other file needs to change.
  *
- * `description`, `verifiedFunction`, `sourceNote` and `verificationStatus` come
- * from the client's product PDF, page ranges as cited per item below.
+ * `description` and `verifiedFunction` are the client's own revised copy — each
+ * a two-sentence brief split at its natural sentence boundary: the first
+ * sentence (what the layer *is*) becomes `description`, the second (what it is
+ * designed or intended to do) becomes `verifiedFunction`. Kept verbatim,
+ * including British spelling and the client's own apostrophes — this is their
+ * copy, not a paraphrase of it.
  *
- * Four of the client's nine `verifiedFunction` entries (jamun wood, magnesium,
- * magnet, zinc) arrived with a trailing instruction to us — "do not claim X" /
- * "do not show Y" — appended to the sentence itself. That instruction is
- * followed here by its absence, not by its presence: the directive is not
- * customer-facing copy, so only the substantive, non-medical sentence that
- * preceded it is kept. Printing "do not claim..." on the live page would be a
- * leaked internal note, not a description of the product.
+ * `sourceNote` and `verificationStatus` were supplied earlier, against the
+ * client's original product PDF, and are unchanged here: the marketing pass
+ * that produced this wording did not revisit which claims are lab-confirmed
+ * versus merely documented, so the evidentiary status of each material is
+ * exactly what it was before this copy was polished.
+ *
+ * None of the nine contains a diabetes, blood-sugar, digestion-treatment,
+ * blood-pressure, detox or immunity claim, an exact pH value, or an exact
+ * mineral quantity — the boundaries set for this content. Several (Himalayan,
+ * Japanese and Korean stones in particular) are less hedged than the wording
+ * they replace, which no longer carries an inline "requires laboratory
+ * confirmation" clause of its own; `verificationStatus` is where that caveat
+ * now lives instead.
  */
 const layerSpecs: LayerSpec[] = [
   {
     id: "funnel",
     name: "Funnel",
-    description: "Guides incoming water into the device.",
-    verifiedFunction: "Directs and distributes water across the first media layer.",
+    description:
+      "A wide-entry funnel that guides water smoothly into the device and distributes it evenly across the first media layer.",
+    verifiedFunction:
+      "This helps maintain a steady flow and allows the water to make better contact with the materials inside the treatment column.",
     sourceNote: "Mechanical function based on the supplied device design.",
     verificationStatus: "mechanical",
     anchor: { x: 50, y: 7.5 },
@@ -130,9 +142,10 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "himalayan-stones",
     name: "Himalayan stones",
-    description: "Natural stone media inspired by the Himalayan region.",
+    description:
+      "Natural Himalayan stone media that brings water into contact with a variety of naturally occurring minerals.",
     verifiedFunction:
-      "Intended to interact with water and may contribute minerals such as calcium, magnesium, potassium and bicarbonates. Any mineral or pH change requires laboratory confirmation.",
+      "This layer is designed to support the water’s mineral character and contribute to a clean, balanced and refreshing taste.",
     sourceNote: "Client-provided product PDF, pages 3–5.",
     verificationStatus: "client-documented; lab verification required",
     anchor: { x: 50, y: 18.5 },
@@ -141,9 +154,10 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "japanese-stones",
     name: "Japanese stones",
-    description: "Japanese vanadium alkaline media used as a mineral layer.",
+    description:
+      "Japanese vanadium alkaline stones used as a specialised mineral-conditioning layer.",
     verifiedFunction:
-      "Intended to enrich water with alkaline and trace minerals. Actual mineral release and pH change must be confirmed by laboratory testing.",
+      "As water passes through them, they are intended to support mineral interaction and help create a smoother, more balanced drinking experience.",
     sourceNote: "Client-provided product PDF, pages 9–10.",
     verificationStatus: "client-documented; lab verification required",
     anchor: { x: 50, y: 26 },
@@ -152,11 +166,10 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "jamun-wood",
     name: "Jamun wood",
-    description: "A traditional natural material used in water-storage practices.",
-    // Trailing sentence in the client's PDF — "Do not display diabetes,
-    // pancreas or other medical claims" — withheld. See the note above.
+    description:
+      "Natural Jamun wood traditionally valued for its use in water-storage and water-contact applications.",
     verifiedFunction:
-      "Traditionally used to help maintain water freshness and reduce foul odour or algae.",
+      "This layer is intended to help maintain freshness, minimise unpleasant odours and add a natural element to the device’s treatment process.",
     sourceNote: "Client-provided product PDF, pages 15–16.",
     verificationStatus: "traditional-use claim; further verification required",
     anchor: { x: 41.7, y: 34.1 },
@@ -165,9 +178,9 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "silver",
     name: "Silver",
-    description: "Silver media used within the water-treatment column.",
+    description: "A silver-based media layer incorporated into the water-treatment column.",
     verifiedFunction:
-      "Silver ions are used in water-treatment systems to help inhibit microbial growth. Product-specific effectiveness and silver concentration require testing.",
+      "Silver is commonly used in water systems to help limit unwanted microbial growth, supporting cleaner and fresher water as it travels through the device.",
     sourceNote: "Client-provided product PDF, pages 13–14.",
     verificationStatus: "established general use; product testing required",
     anchor: { x: 58.3, y: 40.9 },
@@ -176,11 +189,10 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "magnesium",
     name: "Magnesium",
-    description: "A magnesium-based mineral media layer.",
-    // Trailing sentence in the client's PDF — "Do not claim that it adds
-    // magnesium or provides body benefits until water testing confirms the
-    // amount released" — withheld. See the note above.
-    verifiedFunction: "Intended as a mineral media layer.",
+    description:
+      "A magnesium-based mineral media layer designed to bring water into contact with an important natural mineral.",
+    verifiedFunction:
+      "It supports the device’s mineral-conditioning process and is intended to contribute to a more balanced water profile.",
     sourceNote: "Client-provided product PDF, pages 21–22.",
     verificationStatus: "lab verification required",
     anchor: { x: 50, y: 49.9 },
@@ -189,11 +201,10 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "magnet",
     name: "Magnet",
-    description: "A magnetic layer through which the water passes.",
-    // Trailing sentence in the client's PDF — "Do not show health benefits
-    // because the client PDF states that scientific evidence is limited" —
-    // withheld. See the note above.
-    verifiedFunction: "Exposes flowing water to a magnetic field.",
+    description:
+      "A magnetic stage that exposes flowing water to a controlled magnetic field as it moves through the device.",
+    verifiedFunction:
+      "It serves as an additional water-conditioning step without changing the natural appearance or flow of the water.",
     sourceNote: "Client-provided product PDF, pages 23–24.",
     verificationStatus: "limited evidence",
     anchor: { x: 50, y: 55.1 },
@@ -202,9 +213,10 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "korean-media",
     name: "Korean media stones",
-    description: "Korean alkaline mineral media used inside the device.",
+    description:
+      "Korean alkaline mineral stones that form one of the device’s main mineral-contact layers.",
     verifiedFunction:
-      "Intended to influence water pH and contribute minerals such as calcium, potassium, magnesium and sodium. All pH, mineral and ORP claims require laboratory confirmation.",
+      "They are intended to support water conditioning, mineral interaction and a smoother, more refreshing taste.",
     sourceNote: "Client-provided product PDF, pages 6–8.",
     verificationStatus: "client-documented; lab verification required",
     anchor: { x: 50, y: 64.8 },
@@ -213,11 +225,10 @@ const layerSpecs: LayerSpec[] = [
   {
     id: "zinc",
     name: "Zinc",
-    description: "A zinc-based trace-mineral media layer.",
-    // Trailing sentence in the client's PDF — "Do not claim zinc release or
-    // health benefits until laboratory testing confirms zinc in the treated
-    // water" — withheld. See the note above.
-    verifiedFunction: "Intended as a trace-mineral media layer.",
+    description:
+      "A zinc-based trace-mineral media layer positioned near the final stage of the treatment column.",
+    verifiedFunction:
+      "It provides an additional mineral-contact step and supports the device’s overall water-conditioning process before the water exits.",
     sourceNote: "Client-provided product PDF, pages 17–18.",
     verificationStatus: "lab verification required",
     anchor: { x: 50, y: 79.4 },
