@@ -864,9 +864,9 @@ export function GlacierExperience() {
           {/* Scene 1 — the summit. */}
           <StoryOverlay ref={openingRef}>
             <div className="flex flex-col items-center">
-              {/* No logo: the only wordmark we have still reads "Himalaya
-                  Sparsh", which is not the confirmed brand. The descriptor is
-                  accurate and says what the product actually is. */}
+              {/* No image logo here: the wordmark asset exists but no
+                  component reads it yet, so the confirmed name renders as
+                  plain text via `product.descriptor` instead. */}
               <p
                 data-intro
                 className="font-mono text-[0.7rem] tracking-[0.4em] text-glacier-300 uppercase"

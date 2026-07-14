@@ -10,6 +10,7 @@ import {
   scenes,
   whatsappHref,
 } from "@/config/content";
+import { BuyNowWhatsAppButton } from "@/components/BuyNowWhatsAppButton";
 
 type FinalCTAProps = {
   ref?: Ref<HTMLElement>;
@@ -94,29 +95,30 @@ export function FinalCTA({ ref, variant }: FinalCTAProps) {
             {cta.body}
           </p>
 
-          {(commerce.buyUrl || whatsappHref) && (
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
-              {commerce.buyUrl && (
-                <a
-                  id="buy-now"
-                  href={commerce.buyUrl}
-                  className={`${buttonBase} bg-ice text-navy-900 hover:bg-white`}
-                >
-                  {cta.buyLabel}
-                </a>
-              )}
-              {whatsappHref && (
-                <a
-                  href={whatsappHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${buttonBase} border border-white/25 bg-white/5 text-ice hover:bg-white/10`}
-                >
-                  {cta.whatsappLabel}
-                </a>
-              )}
-            </div>
-          )}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
+            <BuyNowWhatsAppButton
+              className={`${buttonBase} gap-2 bg-[#25D366] text-navy-900 hover:bg-[#22c15e]`}
+            />
+            {commerce.buyUrl && (
+              <a
+                id="buy-now"
+                href={commerce.buyUrl}
+                className={`${buttonBase} bg-ice text-navy-900 hover:bg-white`}
+              >
+                {cta.buyLabel}
+              </a>
+            )}
+            {whatsappHref && (
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${buttonBase} border border-white/25 bg-white/5 text-ice hover:bg-white/10`}
+              >
+                {cta.whatsappLabel}
+              </a>
+            )}
+          </div>
 
           {hasContact && (
             <address className="mt-6 flex flex-col gap-1 text-xs leading-relaxed text-silver not-italic md:text-sm">

@@ -1,4 +1,4 @@
-# Himalayan Water Converter — scroll-controlled glacier experience
+# Himalaya Sparsh — scroll-controlled glacier experience
 
 A single-product site whose hero is a glacier film the visitor turns by hand.
 Scroll position maps straight onto a frame index, so the footage runs forwards and
@@ -35,7 +35,7 @@ npm run test:e2e
 | `public/frames/desktop/` | 180 WebP frames, 1280×720, ~6.3 MB — generated, committed |
 | `public/frames/mobile/` | 96 WebP frames, 768×432, ~1.7 MB — generated, committed |
 | `public/images/video-poster.jpg` | Poster / first frame. Sits behind the canvas so the first paint is never black |
-| `public/images/logo.svg` | **Unused.** Still reads "Himalaya Sparsh", which is not the confirmed brand |
+| `public/images/logo.svg` | **Unused.** Wordmark reads "Himalaya Sparsh" — now the confirmed brand — but no component renders it yet |
 
 ### ⚠ The device render needs a clean re-export
 
@@ -45,8 +45,8 @@ and they are legible at desktop reveal size:
 
 - an **ISO certification badge** and two other certification-style marks, none of
   which we have evidence for;
-- **"HIMALAYA SPARSH" / "The Living Water"** branding, which is not the confirmed
-  brand;
+- **"HIMALAYA SPARSH" / "The Living Water"** branding, printed on the render
+  itself rather than added by the site;
 - garbled AI-generated text (*"CERTELEAM TSO SOOL RYROUM"*, *"INTERUATIONALY
   GEREINGH OURITORBOIN GENIOR"*, *"Himalano Mapselc Ouyan Water Vitalanns"*).
 

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { Ref } from "react";
 import { assets, deviceImage, scenes } from "@/config/content";
+import { BuyNowWhatsAppButton } from "@/components/BuyNowWhatsAppButton";
 
 type ProductRevealProps = {
   /** The whole scene layer — the timeline fades this in and out. */
@@ -177,6 +178,11 @@ export function ProductReveal({
             <p className="mt-5 max-w-md text-base leading-relaxed text-pretty text-silver md:text-lg">
               {device.intro.body}
             </p>
+
+            {/* The scene layer above is `pointer-events-none` for the scrubbed
+                animation's sake, so this needs its own `pointer-events-auto`
+                to stay clickable while the scene is on screen. */}
+            <BuyNowWhatsAppButton className="pointer-events-auto mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors duration-200 hover:bg-[#22c15e]" />
           </div>
         </div>
       </div>

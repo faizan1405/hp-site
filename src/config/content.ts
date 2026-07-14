@@ -431,9 +431,10 @@ export const assets = {
   /** Alpha silhouette of the same render. Clips the light sweep to the device. */
   deviceMask: "/images/device-mask.png",
   /**
-   * TODO(client): `logo.svg` still reads "Himalaya Sparsh", which is not the
-   * confirmed brand. Nothing renders a logo while this is null — set the path
-   * once a correct wordmark exists and it appears everywhere at once.
+   * `logo.svg` is a wordmark reading "Himalaya Sparsh" — now the confirmed
+   * brand. No component reads `assets.logo` yet; the nav and headings render
+   * `product.descriptor` as text instead. Set this AND wire it into a
+   * component if the site should show the mark image rather than text.
    */
   logo: null as string | null,
 } as const;
@@ -442,22 +443,19 @@ export const assets = {
 export const deviceImage = { width: 424, height: 1330 } as const;
 
 export const brand = {
-  /** TODO(client): final brand name. */
-  name: null as string | null,
+  /** Confirmed by the client. */
+  name: "Himalaya Sparsh" as string | null,
   /** TODO(client): final tagline. */
   tagline: null as string | null,
 } as const;
 
-/**
- * Neutral, accurate naming used until the client confirms the brand. Safe to
- * show: it describes what the product is rather than claiming what it does.
- */
+/** The client's confirmed brand and product name — the same name for both. */
 export const product = {
-  name: "Himalayan Water Converter",
-  descriptor: "Water Converter Device",
+  name: "Himalaya Sparsh",
+  descriptor: "Himalaya Sparsh",
 } as const;
 
-/** What the page calls itself when there is no confirmed brand name yet. */
+/** What the page calls itself. Falls back to `product.name` if `brand.name` is ever unset again. */
 export const siteName: string = brand.name ?? product.name;
 
 export const scenes = {
@@ -517,7 +515,7 @@ export const scenes = {
 
     /** Alt text for the device render. Describes it; claims nothing about it. */
     imageAlt:
-      "The water converter device: a copper vessel seated on a cylindrical body, shown from the front",
+      "Himalaya Sparsh: a copper vessel seated on a cylindrical body, shown from the front",
   },
 
   /**
@@ -541,7 +539,7 @@ export const scenes = {
 
     /** Describes the drawing for screen readers and for search engines. */
     cutawayAlt:
-      "Cutaway diagram of the water converter: a funnel at the top feeding a column packed, from top to bottom, with Himalayan stones, Japanese stones, jamun wood and silver, magnesium, a magnet, Korean media stones and zinc, above the outlet.",
+      "Cutaway diagram of Himalaya Sparsh: a funnel at the top feeding a column packed, from top to bottom, with Himalayan stones, Japanese stones, jamun wood and silver, magnesium, a magnet, Korean media stones and zinc, above the outlet.",
 
     range: {
       inStart: 48,
@@ -578,7 +576,7 @@ export const scenes = {
     eyebrow: "The result",
     heading: "Water, poured",
     body: "The water leaves the column and fills the glass. What it is like when it gets there will be described here once it has been measured.",
-    glassAlt: "A glass filling with water poured from the device",
+    glassAlt: "A glass filling with water poured from Himalaya Sparsh",
     range: {
       inStart: BENEFITS_END,
       inEnd: BENEFITS_END + FINALE_SETTLE_SPAN,
@@ -599,10 +597,10 @@ export const scenes = {
   cta: {
     eyebrow: "Bring the mountain home",
     heading: product.name,
-    body: "Discover the device, its materials and its water journey.",
+    body: "Discover Himalaya Sparsh, its materials and its water journey.",
     buyLabel: "Buy now",
     whatsappLabel: "Enquire on WhatsApp",
-    whatsappMessage: `Hi, I'd like to enquire about the ${product.name}.`,
+    whatsappMessage: `Hi, I'd like to enquire about ${product.name}.`,
     /** No exit: the CTA is the last thing on the page and must stay on screen. */
     range: {
       inStart: CTA_IN_START,
@@ -631,6 +629,25 @@ export const commerce = {
   whatsappNumber: null as string | null,
   whatsappMessage: scenes.cta.whatsappMessage,
 } as const;
+
+/**
+ * The "Buy Now" button's own WhatsApp order flow: a confirmed number and a
+ * pre-written enquiry message supplied by the client. Kept separate from
+ * `commerce.whatsappNumber` above, which is a different, still-unconfirmed
+ * general enquiry line — this one is real and always renders.
+ */
+export const buyNowWhatsapp = {
+  /** International format, digits only. */
+  number: "917095007500",
+  message:
+    "Hello Himalaya Sparsh, I am interested in buying Himalaya Sparsh. Please share the price, delivery details, and ordering process.",
+  label: "Buy Now on WhatsApp",
+} as const;
+
+/** The deep link the "Buy Now" button opens, in a new tab. */
+export const buyNowWhatsappHref = `https://wa.me/${buyNowWhatsapp.number}?text=${encodeURIComponent(
+  buyNowWhatsapp.message,
+)}`;
 
 export const founder = {
   /** TODO(client): founder name, role, story and portrait. */
@@ -692,11 +709,10 @@ export const about = {
 
 export const seo = {
   title: `${product.name} — a scroll-driven Himalayan journey`,
-  description:
-    "A scroll-driven Himalayan water-converter experience: from the glacier, through the landscape the Gonbo Rangjon stones are associated with, into the device and down through the column.",
+  description: `${product.name}: a scroll-driven Himalayan water experience — from the glacier, through the landscape the Gonbo Rangjon stones are associated with, into the device and down through the column.`,
   keywords: [
+    "Himalaya Sparsh",
     "Himalayan water converter",
-    "water converter device",
     "Gonbo Rangjon",
     "Zanskar",
     "Ladakh",

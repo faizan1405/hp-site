@@ -23,8 +23,8 @@ export function LoadingScreen({ progress, hidden }: LoadingScreenProps) {
       aria-live="polite"
       aria-busy={!hidden}
     >
-      {/* No logo: the only wordmark we have still reads "Himalaya Sparsh",
-          which is not the confirmed brand. */}
+      {/* No image logo here: the wordmark asset exists but no component
+          reads it yet, so the confirmed name renders as plain text. */}
       <p className="font-mono text-[0.7rem] tracking-[0.4em] text-glacier-300 uppercase">
         {product.descriptor}
       </p>
