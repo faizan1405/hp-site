@@ -65,7 +65,7 @@ export default function AboutPage() {
           {about.body.map((paragraph, index) => (
             <p
               key={index}
-              className="text-left text-base leading-relaxed text-pretty text-silver hyphens-auto md:text-lg md:text-justify"
+              className="text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-silver hyphens-auto md:text-lg"
             >
               {paragraph}
             </p>
@@ -99,7 +99,7 @@ export default function AboutPage() {
         <h2 className="mt-4 font-display text-3xl leading-tight font-light text-balance text-ice md:text-4xl">
           Inside the device
         </h2>
-        <p className="mt-5 max-w-2xl text-left text-base leading-relaxed text-pretty text-silver hyphens-auto md:text-lg md:text-justify">
+        <p className="mt-5 max-w-2xl text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-silver hyphens-auto md:text-lg">
           {about.ingredientsIntro}
         </p>
 
@@ -126,11 +126,11 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              <p className="mt-4 text-left text-sm leading-relaxed text-pretty text-silver hyphens-auto md:text-justify">
+              <p className="mt-4 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-silver hyphens-auto">
                 {layer.description}
               </p>
               {layer.verifiedFunction && (
-                <p className="mt-2 text-left text-sm leading-relaxed text-pretty text-ice hyphens-auto md:text-justify">
+                <p className="mt-2 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-ice hyphens-auto">
                   {layer.verifiedFunction}
                 </p>
               )}
@@ -150,7 +150,7 @@ export default function AboutPage() {
           -------------------------------------------------------------- */}
       <section className="mx-auto max-w-4xl px-6 py-16 md:py-20">
         <p className={eyebrowClass}>{ingredientBenefits.heading}</p>
-        <p className="mt-5 max-w-2xl text-left text-base leading-relaxed text-pretty text-silver hyphens-auto md:text-lg md:text-justify">
+        <p className="mt-5 max-w-2xl text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-silver hyphens-auto md:text-lg">
           {ingredientBenefits.intro}
         </p>
 
@@ -160,14 +160,14 @@ export default function AboutPage() {
               <h3 className="font-display text-xl leading-tight font-light text-ice">
                 {item.title}
               </h3>
-              <p className="mt-3 text-left text-sm leading-relaxed text-pretty text-silver hyphens-auto md:text-justify">
+              <p className="mt-3 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-silver hyphens-auto">
                 {item.body}
               </p>
             </div>
           ))}
         </div>
 
-        <p className="mt-8 rounded-2xl border border-glacier-500/20 bg-glacier-500/5 p-5 text-left text-[0.8rem] leading-relaxed text-pretty text-silver-dim hyphens-auto md:text-justify">
+        <p className="mt-8 rounded-2xl border border-glacier-500/20 bg-glacier-500/5 p-5 text-justify [text-align-last:left] text-[0.8rem] leading-relaxed break-words text-pretty text-silver-dim hyphens-auto">
           {ingredientBenefits.disclaimer}
         </p>
       </section>
@@ -181,7 +181,7 @@ export default function AboutPage() {
         <p className="mt-4 rounded-2xl border border-white/15 bg-white/5 p-4 text-sm leading-relaxed text-pretty text-ice">
           {fruitComparison.label}
         </p>
-        <p className="mt-6 max-w-2xl text-left text-base leading-relaxed text-pretty text-silver hyphens-auto md:text-lg md:text-justify">
+        <p className="mt-6 max-w-2xl text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-silver hyphens-auto md:text-lg">
           {fruitComparison.intro}
         </p>
 
@@ -215,7 +215,7 @@ export default function AboutPage() {
           </table>
         </div>
 
-        <p className="mt-6 text-left text-[0.8rem] leading-relaxed text-pretty text-silver-dim hyphens-auto md:text-justify">
+        <p className="mt-6 text-justify [text-align-last:left] text-[0.8rem] leading-relaxed break-words text-pretty text-silver-dim hyphens-auto">
           {fruitComparison.note}
         </p>
 

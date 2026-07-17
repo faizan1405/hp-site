@@ -152,7 +152,7 @@ export default async function DashboardPage() {
         <div className="rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-8">
           <h2 className="font-display text-2xl leading-tight font-light text-ice">Your orders</h2>
           {orders.length === 0 ? (
-            <p className="mt-3 text-sm text-silver">
+            <p className="mt-3 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-silver">
               You haven&apos;t placed an order yet.{" "}
               <Link href="/#purchase" className="text-glacier-300 underline underline-offset-2">
                 Buy Himalaya Sparsh
@@ -197,7 +197,7 @@ export default async function DashboardPage() {
             Your enquiries
           </h2>
           {enquiries.length === 0 ? (
-            <p className="mt-3 text-sm text-silver">
+            <p className="mt-3 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-silver">
               You haven&apos;t sent any enquiries yet. Reach us from the{" "}
               <Link href="/contact" className="text-glacier-300 underline underline-offset-2">
                 contact page
@@ -238,7 +238,7 @@ export default async function DashboardPage() {
             Your reviews
           </h2>
           {reviews.length === 0 ? (
-            <p className="mt-3 text-sm text-silver">
+            <p className="mt-3 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-silver">
               You haven&apos;t submitted a review yet. Share your experience on the{" "}
               <Link href="/reviews" className="text-glacier-300 underline underline-offset-2">
                 reviews page

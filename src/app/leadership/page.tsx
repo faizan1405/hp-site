@@ -106,7 +106,7 @@ export default function LeadershipPage() {
               className={
                 index === 0
                   ? "font-display text-2xl leading-snug font-light text-balance text-ice md:text-3xl"
-                  : "text-left text-base leading-relaxed text-pretty text-silver hyphens-auto md:text-lg md:text-justify"
+                  : "text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-silver hyphens-auto md:text-lg"
               }
             >
               {paragraph}

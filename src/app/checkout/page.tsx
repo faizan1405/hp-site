@@ -29,7 +29,7 @@ export default async function CheckoutPage() {
           <h1 className="font-display text-3xl leading-[1.05] font-light text-balance text-ice sm:text-4xl">
             Online ordering isn&apos;t open yet
           </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-silver">
+          <p className="mt-4 max-w-md text-justify [text-align-last:left] text-sm leading-relaxed break-words text-silver">
             We&apos;re finalising checkout for {product.name}. Enquire on WhatsApp in the
             meantime and our team will help you order directly.
           </p>

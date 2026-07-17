@@ -45,7 +45,7 @@ export default async function CheckoutSuccessPage({
             <h1 className="mt-4 font-display text-3xl leading-[1.05] font-light text-balance text-ice sm:text-4xl">
               Thank you, {order.customerName.split(" ")[0]}.
             </h1>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-silver">
+            <p className="mt-4 max-w-md text-justify [text-align-last:left] text-sm leading-relaxed break-words text-silver">
               Your order <span className="text-ice">{order.orderNumber}</span> for{" "}
               {order.productName} is confirmed and will be delivered to {order.address},{" "}
               {order.city}. We&apos;ll be in touch with delivery updates.
@@ -59,7 +59,7 @@ export default async function CheckoutSuccessPage({
             <h1 className="font-display text-3xl leading-[1.05] font-light text-balance text-ice sm:text-4xl">
               We&apos;re confirming your payment
             </h1>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-silver">
+            <p className="mt-4 max-w-md text-justify [text-align-last:left] text-sm leading-relaxed break-words text-silver">
               If you completed payment and this doesn&apos;t update shortly, message us on
               WhatsApp with your order number and we&apos;ll confirm it directly.
             </p>

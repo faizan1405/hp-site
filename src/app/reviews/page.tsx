@@ -111,7 +111,7 @@ export default async function ReviewsPage() {
       <section className="mx-auto max-w-4xl px-6 pb-16">
         {approved.length === 0 ? (
           <div className="rounded-2xl border border-white/15 bg-navy-900/70 p-10 text-center">
-            <p className="text-base leading-relaxed text-pretty text-silver">
+            <p className="text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-silver">
               {reviews.emptyState}
             </p>
           </div>
@@ -132,7 +132,7 @@ export default async function ReviewsPage() {
                     {review.title}
                   </p>
                 )}
-                <p className="mt-2 text-sm leading-relaxed text-pretty text-silver">
+                <p className="mt-2 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-silver">
                   {review.text}
                 </p>
                 {review.images.length > 0 && (
@@ -169,7 +169,7 @@ export default async function ReviewsPage() {
           <h2 className="font-display text-2xl leading-tight font-light text-ice md:text-3xl">
             {reviews.formHeading}
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
+          <p className="mt-3 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-silver">
             {reviews.formIntro}
           </p>
           <div className="mt-6">
@@ -177,7 +177,7 @@ export default async function ReviewsPage() {
               <ReviewForm />
             ) : (
               <div className="flex flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-5">
-                <p className="text-sm leading-relaxed text-pretty text-silver">
+                <p className="text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-silver">
                   Sign in with Google to write a review — this keeps reviews
                   tied to a real account.
                 </p>

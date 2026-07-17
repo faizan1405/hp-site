@@ -127,7 +127,7 @@ export default function ContactPage() {
           {contact.address && (
             <div className={`${cardClass} sm:col-span-2`}>
               <p className={cardLabelClass}>Address</p>
-              <address className="mt-2 text-base leading-relaxed text-pretty text-ice not-italic">
+              <address className="mt-2 text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-ice not-italic">
                 {contact.address}
               </address>
               {contactPage.mapHref && (
@@ -159,7 +159,7 @@ export default function ContactPage() {
           <h2 className="font-display text-2xl leading-tight font-light text-ice md:text-3xl">
             {contactPage.formHeading}
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
+          <p className="mt-3 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-silver">
             {contactPage.formIntro}
           </p>
           <div className="mt-6">

@@ -51,7 +51,7 @@ export default async function SignInPage({
         <h1 className="mt-6 font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-5xl">
           Welcome to {siteName}
         </h1>
-        <p className="mt-5 text-base leading-relaxed text-pretty text-silver">
+        <p className="mt-5 text-justify [text-align-last:left] text-base leading-relaxed break-words text-pretty text-silver">
           Sign in with Google to manage your profile, track enquiries and see
           the status of reviews you&apos;ve submitted.
         </p>
@@ -59,7 +59,7 @@ export default async function SignInPage({
         {errorMessage && (
           <p
             role="alert"
-            className="mt-6 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm leading-relaxed text-pretty text-red-200"
+            className="mt-6 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-justify [text-align-last:left] text-sm leading-relaxed break-words text-pretty text-red-200"
           >
             {errorMessage}
           </p>
