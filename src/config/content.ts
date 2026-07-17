@@ -442,6 +442,19 @@ export const assets = {
 /** Intrinsic size of `assets.device`. Reserves the right box so nothing shifts. */
 export const deviceImage = { width: 424, height: 1330 } as const;
 
+/**
+ * Static, non-3D background stills for the content pages (About, Leadership,
+ * Reviews, Contact). Each is an existing frame from the homepage's glacier
+ * footage (or its poster), reused rather than sourcing new photography, so
+ * every themed background already matches the site's own imagery.
+ */
+export const pageBackgrounds = {
+  about: assets.poster,
+  leadership: `${frames.desktop.path}/frame-0090.webp`,
+  reviews: `${frames.desktop.path}/frame-0180.webp`,
+  contact: `${frames.desktop.path}/frame-0140.webp`,
+} as const;
+
 export const brand = {
   /** Confirmed by the client. */
   name: "Himalaya Sparsh" as string | null,

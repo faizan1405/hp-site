@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { PageBackground } from "@/components/PageBackground";
 import { SiteFooter } from "@/components/SiteFooter";
-import { founder, leadership, pageSeo } from "@/config/content";
+import { founder, leadership, pageBackgrounds, pageSeo } from "@/config/content";
 
 export const metadata: Metadata = {
   title: pageSeo.leadership.title,
@@ -32,6 +33,8 @@ function initials(name: string): string {
 export default function LeadershipPage() {
   return (
     <main className="relative min-h-screen bg-navy-900">
+      <PageBackground src={pageBackgrounds.leadership} />
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70vh] bg-[radial-gradient(ellipse_at_top,rgba(111,191,230,0.16)_0%,rgba(111,191,230,0.05)_45%,transparent_75%)]"

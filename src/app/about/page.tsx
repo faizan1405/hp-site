@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageBackground } from "@/components/PageBackground";
 import { SiteFooter } from "@/components/SiteFooter";
 import {
   about,
   deviceLayers,
   fruitComparison,
   ingredientBenefits,
+  pageBackgrounds,
   pageSeo,
 } from "@/config/content";
 
@@ -32,6 +34,8 @@ const eyebrowClass =
 export default function AboutPage() {
   return (
     <main className="relative min-h-screen bg-navy-900">
+      <PageBackground src={pageBackgrounds.about} />
+
       {/* Soft glacier-blue glow behind the hero, matching the rest of the site. */}
       <div
         aria-hidden="true"

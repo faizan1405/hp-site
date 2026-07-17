@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/ContactForm";
+import { PageBackground } from "@/components/PageBackground";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
-import { contact, contactPage, pageSeo } from "@/config/content";
+import { contact, contactPage, pageBackgrounds, pageSeo } from "@/config/content";
 
 export const metadata: Metadata = {
   title: pageSeo.contact.title,
@@ -50,6 +51,8 @@ export default function ContactPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
       />
+
+      <PageBackground src={pageBackgrounds.contact} />
 
       <div
         aria-hidden="true"
