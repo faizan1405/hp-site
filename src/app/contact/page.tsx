@@ -46,7 +46,7 @@ const contactJsonLd = {
 
 export default function ContactPage() {
   return (
-    <main className="relative min-h-screen bg-navy-900">
+    <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
@@ -56,9 +56,10 @@ export default function ContactPage() {
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70vh] bg-[radial-gradient(ellipse_at_top,rgba(111,191,230,0.16)_0%,rgba(111,191,230,0.05)_45%,transparent_75%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[70vh] bg-[radial-gradient(ellipse_at_top,rgba(111,191,230,0.16)_0%,rgba(111,191,230,0.05)_45%,transparent_75%)]"
       />
 
+      <div className="relative z-10">
       <section className="mx-auto max-w-3xl px-6 pt-28 pb-12 text-center sm:pt-36">
         <p className="font-mono text-[0.7rem] tracking-[0.4em] text-glacier-300 uppercase">
           {contactPage.eyebrow}
@@ -163,6 +164,7 @@ export default function ContactPage() {
       </section>
 
       <SiteFooter />
+      </div>
     </main>
   );
 }
