@@ -104,6 +104,42 @@ export type ReviewDoc = {
 };
 
 /* -------------------------------------------------------------------------- *
+ * Order — the "Buy Now" checkout's own record. Created as `PENDING_PAYMENT`
+ * the moment a Razorpay order is opened, then flipped to `PAID` or
+ * `PAYMENT_FAILED` once the client reports back and the signature is
+ * verified server-side (see src/app/api/checkout/verify/route.ts). Delivery
+ * details are snapshotted onto the order itself — never joined from
+ * `CustomerProfileDoc` at read time — so a later profile edit never rewrites
+ * what a past order shipped to.
+ * -------------------------------------------------------------------------- */
+
+export type OrderStatus = "PENDING_PAYMENT" | "PAID" | "PAYMENT_FAILED" | "CANCELLED";
+
+export type OrderDoc = {
+  _id: ObjectId;
+  userId: ObjectId;
+  /** Short, human-readable reference shown to the customer and in admin. */
+  orderNumber: string;
+  productName: string;
+  /** Smallest currency unit (paise for INR) — what Razorpay actually charged. */
+  amount: number;
+  currency: string;
+  status: OrderStatus;
+  customerName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string | null;
+  razorpaySignature: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/* -------------------------------------------------------------------------- *
  * SiteSettings — a single document (`_id: "site"`) the admin Settings page
  * reads and writes. Deliberately narrow: business/contact details only, never
  * the animation timeline, ingredient copy or claims-safety wording that lives
@@ -149,14 +185,15 @@ export type AuditAction =
   | "ENQUIRY_DELETED"
   | "MEDIA_DELETED"
   | "MEDIA_REPLACED"
-  | "SETTINGS_UPDATED";
+  | "SETTINGS_UPDATED"
+  | "ORDER_STATUS_CHANGED";
 
 export type AuditLogDoc = {
   _id: ObjectId;
   actorId: ObjectId;
   actorEmail: string;
   action: AuditAction;
-  targetType: "review" | "user" | "enquiry" | "media" | "settings";
+  targetType: "review" | "user" | "enquiry" | "media" | "settings" | "order";
   targetId: string | null;
   meta: Record<string, unknown> | null;
   createdAt: Date;
@@ -186,6 +223,10 @@ export async function reviewsCollection(): Promise<Collection<ReviewDoc>> {
   return (await getDb()).collection<ReviewDoc>("reviews");
 }
 
+export async function ordersCollection(): Promise<Collection<OrderDoc>> {
+  return (await getDb()).collection<OrderDoc>("orders");
+}
+
 export async function siteSettingsCollection(): Promise<Collection<SiteSettingsDoc>> {
   return (await getDb()).collection<SiteSettingsDoc>("siteSettings");
 }
@@ -205,12 +246,13 @@ type GlobalWithIndexes = typeof globalThis & {
 };
 
 async function createIndexes(): Promise<void> {
-  const [users, profiles, enquiries, reviews, auditLogs] = await Promise.all([
+  const [users, profiles, enquiries, reviews, auditLogs, orders] = await Promise.all([
     usersCollection(),
     customerProfilesCollection(),
     contactEnquiriesCollection(),
     reviewsCollection(),
     auditLogsCollection(),
+    ordersCollection(),
   ]);
 
   await Promise.all([
@@ -221,6 +263,10 @@ async function createIndexes(): Promise<void> {
     reviews.createIndex({ status: 1, createdAt: -1 }),
     reviews.createIndex({ userId: 1, createdAt: -1 }),
     auditLogs.createIndex({ createdAt: -1 }),
+    orders.createIndex({ razorpayOrderId: 1 }, { unique: true }),
+    orders.createIndex({ userId: 1, createdAt: -1 }),
+    orders.createIndex({ status: 1, createdAt: -1 }),
+    orders.createIndex({ orderNumber: 1 }, { unique: true }),
   ]);
 }
 

@@ -97,7 +97,7 @@ export default function LeadershipPage() {
               className={
                 index === 0
                   ? "font-display text-2xl leading-snug font-light text-balance text-ice md:text-3xl"
-                  : "text-base leading-relaxed text-pretty text-silver md:text-lg"
+                  : "text-left text-base leading-relaxed text-pretty text-silver hyphens-auto md:text-lg md:text-justify"
               }
             >
               {paragraph}

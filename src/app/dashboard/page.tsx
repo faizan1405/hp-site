@@ -5,9 +5,11 @@ import { requireSessionForPage } from "@/lib/admin";
 import {
   contactEnquiriesCollection,
   customerProfilesCollection,
+  ordersCollection,
   reviewsCollection,
   usersCollection,
   type ContactEnquiryStatus,
+  type OrderStatus,
   type ReviewStatus,
 } from "@/lib/db/schema";
 import { ProfileForm } from "@/components/dashboard/ProfileForm";
@@ -51,6 +53,13 @@ const reviewStatusStyles: Record<ReviewStatus, string> = {
   HIDDEN: "border-white/20 bg-white/5 text-silver-dim",
 };
 
+const orderStatusStyles: Record<OrderStatus, string> = {
+  PENDING_PAYMENT: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+  PAID: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+  PAYMENT_FAILED: "border-red-400/30 bg-red-400/10 text-red-300",
+  CANCELLED: "border-white/20 bg-white/5 text-silver-dim",
+};
+
 function StatusBadge({ label, className }: { label: string; className: string }) {
   return (
     <span
@@ -65,7 +74,7 @@ export default async function DashboardPage() {
   const session = await requireSessionForPage("/dashboard");
   const userId = new ObjectId(session.user.id);
 
-  const [userDoc, profile, enquiries, reviews] = await Promise.all([
+  const [userDoc, profile, enquiries, reviews, orders] = await Promise.all([
     (await usersCollection()).findOne({ _id: userId }),
     (await customerProfilesCollection()).findOne({ userId }),
     (await contactEnquiriesCollection())
@@ -74,6 +83,7 @@ export default async function DashboardPage() {
       .limit(20)
       .toArray(),
     (await reviewsCollection()).find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
+    (await ordersCollection()).find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
   ]);
 
   const memberSince = userDoc?.createdAt ? dateFormatter.format(userDoc.createdAt) : null;
@@ -134,6 +144,49 @@ export default async function DashboardPage() {
               }}
             />
           </div>
+        </div>
+      </section>
+
+      {/* Your orders. */}
+      <section className="mx-auto max-w-4xl px-6 pb-8">
+        <div className="rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-8">
+          <h2 className="font-display text-2xl leading-tight font-light text-ice">Your orders</h2>
+          {orders.length === 0 ? (
+            <p className="mt-3 text-sm text-silver">
+              You haven&apos;t placed an order yet.{" "}
+              <Link href="/#purchase" className="text-glacier-300 underline underline-offset-2">
+                Buy Himalaya Sparsh
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="mt-4 flex flex-col gap-3">
+              {orders.map((order) => (
+                <li
+                  key={order._id.toString()}
+                  className="rounded-xl border border-white/10 bg-white/5 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-ice">{order.orderNumber}</p>
+                    <StatusBadge
+                      label={order.status}
+                      className={orderStatusStyles[order.status]}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-sm text-silver">
+                    {order.productName} · {(order.amount / 100).toLocaleString("en-IN", {
+                      style: "currency",
+                      currency: order.currency,
+                      maximumFractionDigits: 0,
+                    })}
+                  </p>
+                  <p className="mt-2 text-[0.7rem] text-silver-dim">
+                    {dateFormatter.format(order.createdAt)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 

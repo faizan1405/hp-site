@@ -50,6 +50,29 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 export const enquiryStatusSchema = z.enum(["NEW", "IN_PROGRESS", "RESOLVED", "SPAM"]);
 export const reviewStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED", "HIDDEN"]);
 export const userRoleSchema = z.enum(["USER", "ADMIN"]);
+export const orderStatusSchema = z.enum([
+  "PENDING_PAYMENT",
+  "PAID",
+  "PAYMENT_FAILED",
+  "CANCELLED",
+]);
+
+export const checkoutSchema = z.object({
+  name: z.string().trim().min(1, "Please enter your name.").max(120),
+  email: z.string().trim().min(1, "Please enter your email.").email("Please enter a valid email address.").max(200),
+  phone: z.string().trim().min(6, "Please enter a valid phone number.").max(20),
+  address: z.string().trim().min(1, "Please enter your address.").max(300),
+  city: z.string().trim().min(1, "Please enter your city.").max(100),
+  state: z.string().trim().min(1, "Please enter your state.").max(100),
+  postalCode: z.string().trim().min(1, "Please enter your PIN code.").max(20),
+});
+export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+export const verifyPaymentSchema = z.object({
+  razorpay_order_id: z.string().trim().min(1),
+  razorpay_payment_id: z.string().trim().min(1),
+  razorpay_signature: z.string().trim().min(1),
+});
 
 export const adminNoteSchema = z.string().trim().max(500);
 

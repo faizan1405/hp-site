@@ -6,7 +6,8 @@ type BuyNowWhatsAppButtonProps = {
 };
 
 /**
- * Opens WhatsApp, in a new tab, with the client's pre-written order message.
+ * The "Enquire on WhatsApp" button — opens WhatsApp, in a new tab, with the
+ * client's pre-written enquiry message (price, delivery, ordering process).
  * `className` is required so each placement can match its own surrounding
  * layout (the device scene vs. the final CTA) without this component guessing.
  */

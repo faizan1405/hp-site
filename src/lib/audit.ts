@@ -1,6 +1,6 @@
 import "server-only";
 import { ObjectId } from "mongodb";
-import { auditLogsCollection, type AuditAction } from "@/lib/db/schema";
+import { auditLogsCollection, type AuditAction, type AuditLogDoc } from "@/lib/db/schema";
 
 /**
  * Best-effort audit trail for sensitive admin actions. Called AFTER the
@@ -12,7 +12,7 @@ export async function logAdminAction(entry: {
   actorId: string;
   actorEmail: string;
   action: AuditAction;
-  targetType: "review" | "user" | "enquiry" | "media" | "settings";
+  targetType: AuditLogDoc["targetType"];
   targetId?: string | null;
   meta?: Record<string, unknown> | null;
 }): Promise<void> {

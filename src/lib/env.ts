@@ -55,6 +55,10 @@ const rawEnvSchema = z.object({
 
   RESEND_API_KEY: optionalString(),
   EMAIL_FROM: optionalString(),
+
+  // Razorpay — the "Buy Now" online payment flow. See .env.example.
+  RAZORPAY_KEY_ID: optionalString(),
+  RAZORPAY_KEY_SECRET: optionalString(),
 });
 
 type RawEnv = z.infer<typeof rawEnvSchema>;
@@ -124,12 +128,25 @@ export const env = {
   get EMAIL_FROM() {
     return readRawEnv().EMAIL_FROM ?? null;
   },
+
+  get RAZORPAY_KEY_ID() {
+    return required("RAZORPAY_KEY_ID");
+  },
+  get RAZORPAY_KEY_SECRET() {
+    return required("RAZORPAY_KEY_SECRET");
+  },
 } as const;
 
 /** True once every variable email notifications need is present. */
 export function isEmailConfigured(): boolean {
   const raw = readRawEnv();
   return Boolean(raw.RESEND_API_KEY && raw.EMAIL_FROM && raw.CONTACT_RECEIVER_EMAIL);
+}
+
+/** True once both Razorpay keys the "Buy Now" checkout needs are present. */
+export function isRazorpayConfigured(): boolean {
+  const raw = readRawEnv();
+  return Boolean(raw.RAZORPAY_KEY_ID && raw.RAZORPAY_KEY_SECRET);
 }
 
 /** True once every variable Cloudinary uploads need is present. */

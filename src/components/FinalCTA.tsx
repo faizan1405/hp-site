@@ -1,15 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import type { Ref } from "react";
-import {
-  assets,
-  commerce,
-  contact,
-  deviceImage,
-  scenes,
-  whatsappHref,
-} from "@/config/content";
+import { assets, commerce, contact, deviceImage, scenes } from "@/config/content";
 import { BuyNowWhatsAppButton } from "@/components/BuyNowWhatsAppButton";
 
 type FinalCTAProps = {
@@ -27,11 +21,11 @@ const buttonBase =
   "inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full px-8 py-3.5 text-sm font-medium tracking-wide transition-colors duration-200 sm:w-auto";
 
 /**
- * The last scene. Every element below is conditional: an unset price renders no
- * price, an unset buy URL renders no button. A dead `href="#"` would look like a
- * working button and take the visitor nowhere, which is worse than no button —
- * so until the client supplies the real values, this is a closing statement with
- * nothing to press. See "THE NULL RULE" in content.ts.
+ * The last scene. Two real actions: Buy Now (the actual online checkout —
+ * hidden while `commerce.amountInPaise` is unset, per "THE NULL RULE" in
+ * content.ts, since a dead `href="#"` would look like a working button and
+ * take the visitor nowhere) and Enquire on WhatsApp (always real — the
+ * number is confirmed).
  */
 export function FinalCTA({ ref, variant }: FinalCTAProps) {
   const isOverlay = variant === "overlay";
@@ -96,28 +90,18 @@ export function FinalCTA({ ref, variant }: FinalCTAProps) {
           </p>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
-            <BuyNowWhatsAppButton
-              className={`${buttonBase} gap-2 bg-[#25D366] text-navy-900 hover:bg-[#22c15e]`}
-            />
-            {commerce.buyUrl && (
-              <a
+            {commerce.amountInPaise && (
+              <Link
                 id="buy-now"
-                href={commerce.buyUrl}
+                href="/checkout"
                 className={`${buttonBase} bg-ice text-navy-900 hover:bg-white`}
               >
                 {cta.buyLabel}
-              </a>
+              </Link>
             )}
-            {whatsappHref && (
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${buttonBase} border border-white/25 bg-white/5 text-ice hover:bg-white/10`}
-              >
-                {cta.whatsappLabel}
-              </a>
-            )}
+            <BuyNowWhatsAppButton
+              className={`${buttonBase} gap-2 bg-[#25D366] text-navy-900 hover:bg-[#22c15e]`}
+            />
           </div>
 
           {hasContact && (

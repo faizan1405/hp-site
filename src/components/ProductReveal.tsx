@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import type { Ref } from "react";
-import { assets, deviceImage, scenes } from "@/config/content";
+import { assets, commerce, deviceImage, scenes } from "@/config/content";
 import { BuyNowWhatsAppButton } from "@/components/BuyNowWhatsAppButton";
 
 type ProductRevealProps = {
@@ -24,7 +25,7 @@ type ProductRevealProps = {
   introRef?: Ref<HTMLDivElement>;
 };
 
-const { device } = scenes;
+const { device, cta } = scenes;
 
 /** The device render's own aspect ratio — a tall, narrow cylinder. */
 const DEVICE_ASPECT = `${deviceImage.width} / ${deviceImage.height}`;
@@ -180,9 +181,19 @@ export function ProductReveal({
             </p>
 
             {/* The scene layer above is `pointer-events-none` for the scrubbed
-                animation's sake, so this needs its own `pointer-events-auto`
+                animation's sake, so these need their own `pointer-events-auto`
                 to stay clickable while the scene is on screen. */}
-            <BuyNowWhatsAppButton className="pointer-events-auto mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors duration-200 hover:bg-[#22c15e]" />
+            <div className="pointer-events-auto mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
+              {commerce.amountInPaise && (
+                <Link
+                  href="/checkout"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-ice px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors duration-200 hover:bg-white"
+                >
+                  {cta.buyLabel}
+                </Link>
+              )}
+              <BuyNowWhatsAppButton className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors duration-200 hover:bg-[#22c15e]" />
+            </div>
           </div>
         </div>
       </div>

@@ -5,9 +5,11 @@ import { ObjectId } from "mongodb";
 import { requireAdmin } from "@/lib/admin";
 import {
   contactEnquiriesCollection,
+  ordersCollection,
   reviewsCollection,
   usersCollection,
   type ContactEnquiryStatus,
+  type OrderStatus,
   type ReviewStatus,
   type UserRole,
 } from "@/lib/db/schema";
@@ -16,6 +18,7 @@ import { sanitizeText } from "@/lib/request";
 import {
   adminNoteSchema,
   enquiryStatusSchema,
+  orderStatusSchema,
   reviewStatusSchema,
   userRoleSchema,
 } from "@/lib/validation";
@@ -157,6 +160,31 @@ export async function deleteReview(reviewId: string): Promise<void> {
   revalidatePath("/admin/reviews");
   revalidatePath("/admin");
   revalidatePath("/reviews");
+}
+
+export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
+  const session = await requireAdmin();
+  assertAdminRateLimit(session.user.id);
+  const parsedStatus = orderStatusSchema.parse(status);
+
+  const orders = await ordersCollection();
+  await orders.updateOne(
+    { _id: new ObjectId(orderId) },
+    { $set: { status: parsedStatus, updatedAt: new Date() } },
+  );
+
+  await logAdminAction({
+    actorId: session.user.id,
+    actorEmail: session.user.email ?? "",
+    action: "ORDER_STATUS_CHANGED",
+    targetType: "order",
+    targetId: orderId,
+    meta: { status: parsedStatus },
+  });
+
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
 }
 
 export async function setUserActive(userId: string, isActive: boolean): Promise<void> {

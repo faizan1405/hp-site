@@ -611,9 +611,7 @@ export const scenes = {
     eyebrow: "Bring the mountain home",
     heading: product.name,
     body: "Discover Himalaya Sparsh, its materials and its water journey.",
-    buyLabel: "Buy now",
-    whatsappLabel: "Enquire on WhatsApp",
-    whatsappMessage: `Hi, I'd like to enquire about ${product.name}.`,
+    buyLabel: "Buy Now",
     /** No exit: the CTA is the last thing on the page and must stay on screen. */
     range: {
       inStart: CTA_IN_START,
@@ -632,29 +630,33 @@ export const scenes = {
  * -------------------------------------------------------------------------- */
 
 export const commerce = {
-  /** TODO(client): display string, e.g. "₹12,500". */
-  price: null as string | null,
-  /** TODO(client): e.g. "Inclusive of taxes". */
-  priceNote: null as string | null,
-  /** TODO(client): the Buy button's destination. Hidden while null. */
-  buyUrl: null as string | null,
-  /** TODO(client): international format, digits only, e.g. "919876543210". */
-  whatsappNumber: null as string | null,
-  whatsappMessage: scenes.cta.whatsappMessage,
+  /** Display string shown next to the Buy Now button. */
+  price: "₹1" as string | null,
+  /**
+   * The authoritative charge amount, in paise — what `/api/checkout/create-order`
+   * actually asks Razorpay to collect. Kept separate from the display string
+   * above so a cosmetic copy change can never accidentally alter what a
+   * customer is charged. `null` hides the Buy Now button entirely (see
+   * `hasPurchaseAction` below) and falls back to the WhatsApp enquiry flow.
+   */
+  amountInPaise: 100 as number | null,
+  /** TODO(client): a test amount stands in until final pricing is confirmed. */
+  priceNote: "Test transaction while pricing is finalised." as string | null,
+  currency: "INR",
 } as const;
 
 /**
- * The "Buy Now" button's own WhatsApp order flow: a confirmed number and a
- * pre-written enquiry message supplied by the client. Kept separate from
- * `commerce.whatsappNumber` above, which is a different, still-unconfirmed
- * general enquiry line — this one is real and always renders.
+ * The WhatsApp enquiry flow: a confirmed number and a pre-written message a
+ * customer can edit before sending, covering price, delivery and ordering
+ * questions — the "assisted purchase" path alongside the real online
+ * checkout above.
  */
 export const buyNowWhatsapp = {
   /** International format, digits only. */
   number: "917095007500",
   message:
     "Hello Himalaya Sparsh, I am interested in buying Himalaya Sparsh. Please share the price, delivery details, and ordering process.",
-  label: "Buy Now on WhatsApp",
+  label: "Enquire on WhatsApp",
 } as const;
 
 /** The deep link the "Buy Now" button opens, in a new tab. */
@@ -964,7 +966,7 @@ export const dashboard = {
     {
       id: "orders",
       title: "Order & purchase status",
-      body: "Follow orders from confirmation to delivery, once ordering goes live.",
+      body: "Follow orders from confirmation to delivery.",
     },
     {
       id: "reviews",
@@ -1036,6 +1038,10 @@ export const pageSeo = {
     description:
       "Contact Himalaya Sparsh™ — WhatsApp, phone, email and address. Open 24/7 for enquiries about our premium hydration device.",
   },
+  checkout: {
+    title: "Checkout",
+    description: `Complete your ${product.name} order — delivery details and secure online payment.`,
+  },
 } as const;
 
 export const seo = {
@@ -1056,14 +1062,5 @@ export const seo = {
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? null,
 } as const;
 
-/** The WhatsApp deep link — null while there is no number to send it to. */
-export const whatsappHref: string | null = commerce.whatsappNumber
-  ? `https://wa.me/${commerce.whatsappNumber}?text=${encodeURIComponent(
-      commerce.whatsappMessage,
-    )}`
-  : null;
-
-/** True when the CTA has at least one thing a visitor can actually press. */
-export const hasPurchaseAction: boolean = Boolean(
-  commerce.buyUrl || whatsappHref,
-);
+/** True once there's a real, chargeable price — i.e. Buy Now itself renders. */
+export const hasPurchaseAction: boolean = Boolean(commerce.amountInPaise);

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   contactEnquiriesCollection,
+  ordersCollection,
   reviewsCollection,
   usersCollection,
 } from "@/lib/db/schema";
@@ -25,10 +26,11 @@ const enquiryToneByStatus: Record<string, BadgeTone> = {
 };
 
 async function getDashboardData() {
-  const [users, enquiries, reviews] = await Promise.all([
+  const [users, enquiries, reviews, orders] = await Promise.all([
     usersCollection(),
     contactEnquiriesCollection(),
     reviewsCollection(),
+    ordersCollection(),
   ]);
 
   const [
@@ -36,6 +38,7 @@ async function getDashboardData() {
     newEnquiries,
     pendingReviews,
     approvedReviews,
+    paidOrders,
     recentEnquiries,
     recentPendingReviews,
   ] = await Promise.all([
@@ -43,6 +46,7 @@ async function getDashboardData() {
     enquiries.countDocuments({ status: "NEW" }),
     reviews.countDocuments({ status: "PENDING" }),
     reviews.countDocuments({ status: "APPROVED" }),
+    orders.countDocuments({ status: "PAID" }),
     enquiries.find({}).sort({ createdAt: -1 }).limit(5).toArray(),
     reviews.find({ status: "PENDING" }).sort({ createdAt: -1 }).limit(5).toArray(),
   ]);
@@ -53,6 +57,7 @@ async function getDashboardData() {
       newEnquiries,
       pendingReviews,
       approvedReviews,
+      paidOrders,
     },
     recentEnquiries,
     recentPendingReviews,
@@ -64,6 +69,7 @@ export default async function AdminOverviewPage() {
 
   const cards = [
     { label: "Total users", value: counts.totalUsers, href: "/admin/users" },
+    { label: "Paid orders", value: counts.paidOrders, href: "/admin/orders?status=PAID" },
     { label: "New enquiries", value: counts.newEnquiries, href: "/admin/enquiries?status=NEW" },
     {
       label: "Pending reviews",
@@ -78,6 +84,7 @@ export default async function AdminOverviewPage() {
   ];
 
   const quickLinks = [
+    { label: "View orders", href: "/admin/orders" },
     { label: "Review new enquiries", href: "/admin/enquiries?status=NEW" },
     { label: "Moderate pending reviews", href: "/admin/reviews?status=PENDING" },
     { label: "Manage users", href: "/admin/users" },
