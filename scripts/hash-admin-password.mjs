@@ -95,9 +95,17 @@ async function main() {
   }
 
   const hash = await bcrypt.hash(password, 12);
+  const escapedForDotenv = hash.replace(/\$/g, "\\$");
 
-  console.log("\nADMIN_LOGIN_PASSWORD_HASH generated. Paste this into .env.local and Vercel:\n");
+  console.log("\nADMIN_LOGIN_PASSWORD_HASH generated.\n");
+  console.log("In Vercel (Project Settings -> Environment Variables), paste as-is:");
   console.log(hash);
+  console.log(
+    "\nIn .env.local, every $ must be escaped as \\$ — Next's env loader treats an " +
+      "unescaped $word as a reference to another variable and silently deletes it, " +
+      "which breaks login with no error at build or boot time. Paste this line instead:",
+  );
+  console.log(`ADMIN_LOGIN_PASSWORD_HASH=${escapedForDotenv}`);
   console.log(
     "\nThis hash is safe to store — it cannot be reversed back into the password. " +
       "The password itself was never written to disk or logged.",

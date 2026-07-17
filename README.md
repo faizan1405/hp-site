@@ -110,12 +110,23 @@ above; this is additive, not a replacement.
 
    ```
    ADMIN_LOGIN_EMAIL=admin@himalayasparsh.com
-   ADMIN_LOGIN_PASSWORD_HASH=<the hash the script printed>
+   ADMIN_LOGIN_PASSWORD_HASH=\$2b\$12\$<rest of the hash the script printed>
    ```
 
-   Restart `next dev` afterward. Until `ADMIN_LOGIN_PASSWORD_HASH` is set,
-   `/admin/login` rejects every attempt with the same generic error it always
-   shows — it fails closed, not open.
+   **Escape every `$` in the hash as `\$`.** A bcrypt hash is full of `$`
+   characters (`$2b$12$...`), and Next's env loader (`@next/env`, via
+   `dotenv-expand`) treats an unescaped `$word` as a reference to another
+   variable named `word` — silently deleting it, quotes or no quotes, with
+   no error at build or boot time. The only symptom is every login attempt
+   failing with the generic "incorrect email or password" message. The app
+   does check the shape of what it loaded (`isAdminCredentialsConfigured()`
+   in `src/lib/env.ts`) and refuses to treat a mangled value as configured,
+   so a forgotten `\` fails closed rather than accepting a corrupted hash —
+   but it's still worth getting right the first time.
+
+   Restart `next dev` afterward. Until `ADMIN_LOGIN_PASSWORD_HASH` is set
+   (and set correctly), `/admin/login` rejects every attempt with the same
+   generic error it always shows — it fails closed, not open.
 
 3. **Add them to Vercel.** Project Settings → Environment Variables → add
    both `ADMIN_LOGIN_EMAIL` and `ADMIN_LOGIN_PASSWORD_HASH` (Production, and
