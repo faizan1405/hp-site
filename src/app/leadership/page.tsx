@@ -32,7 +32,7 @@ function initials(name: string): string {
 
 export default function LeadershipPage() {
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
+    <main className="relative isolate min-h-screen bg-navy-900">
       {/* Sunrise peak sits left-of-frame with open sky to its right — bias
           toward that negative space so the founder portrait and text don't
           land on the brightest, busiest part of the photo. Overlay is

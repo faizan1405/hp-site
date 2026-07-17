@@ -20,10 +20,12 @@ type PageBackgroundProps = {
 };
 
 /**
- * Shared static background layer for content pages (About, Leadership,
- * Reviews, Contact). Rendered as direct children of the page's `relative
- * isolate` <main> so z-0/z-[1] stack correctly instead of being pulled into
- * the root stacking context by a negative z-index.
+ * Fixed background layer for content pages (About, Leadership, Reviews,
+ * Contact). `fixed` (not `absolute`) so the photo stays pinned to the
+ * viewport while page content scrolls over it — rendered inside each page's
+ * own `relative isolate` <main>, so it unmounts on navigation instead of
+ * leaking into other routes, and stacks cleanly against that page's z-10
+ * content instead of escaping into the root stacking context.
  */
 export function PageBackground({
   src,
@@ -31,7 +33,7 @@ export function PageBackground({
   overlayClassName = defaultOverlay,
 }: PageBackgroundProps) {
   return (
-    <>
+    <div className="fixed inset-0 z-0 pointer-events-none">
       <Image
         src={src}
         alt=""
@@ -40,9 +42,9 @@ export function PageBackground({
         priority
         sizes="100vw"
         quality={80}
-        className={`absolute inset-0 z-0 object-cover ${objectPosition}`}
+        className={`object-cover ${objectPosition}`}
       />
-      <div className={`absolute inset-0 z-[1] ${overlayClassName}`} />
-    </>
+      <div className={`absolute inset-0 ${overlayClassName}`} />
+    </div>
   );
 }

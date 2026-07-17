@@ -33,7 +33,7 @@ const eyebrowClass =
 
 export default function AboutPage() {
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
+    <main className="relative isolate min-h-screen bg-navy-900">
       {/* Focal peak sits right-of-centre in the source photo; keep it in
           frame without letting it crowd the long story paragraphs. */}
       <PageBackground

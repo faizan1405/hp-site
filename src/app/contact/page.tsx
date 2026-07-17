@@ -46,7 +46,7 @@ const contactJsonLd = {
 
 export default function ContactPage() {
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
+    <main className="relative isolate min-h-screen bg-navy-900">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}

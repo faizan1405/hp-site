@@ -80,7 +80,7 @@ export default async function ReviewsPage() {
   const [session, approved] = await Promise.all([auth(), getApprovedReviews()]);
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
+    <main className="relative isolate min-h-screen bg-navy-900">
       {/* Calm, near-symmetrical reflection — a light center bias keeps the
           busier rock cluster in the bottom-left corner out of the way of
           the review cards. */}
