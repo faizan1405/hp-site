@@ -879,7 +879,7 @@ export const fruitComparison = {
 
 export const leadership = {
   eyebrow: "Leadership",
-  heading: "A Note from the Founder",
+  heading: "A Note from the Founder Desk",
   intro:
     "At Himalaya Sparsh™, leadership begins with purpose — a commitment to craftsmanship, integrity and thoughtful innovation.",
 } as const;
