@@ -34,19 +34,15 @@ async function getDashboardData() {
   const [
     totalUsers,
     newEnquiries,
-    inProgressEnquiries,
     pendingReviews,
     approvedReviews,
-    hiddenOrRejectedReviews,
     recentEnquiries,
     recentPendingReviews,
   ] = await Promise.all([
     users.countDocuments({}),
     enquiries.countDocuments({ status: "NEW" }),
-    enquiries.countDocuments({ status: "IN_PROGRESS" }),
     reviews.countDocuments({ status: "PENDING" }),
     reviews.countDocuments({ status: "APPROVED" }),
-    reviews.countDocuments({ status: { $in: ["REJECTED", "HIDDEN"] } }),
     enquiries.find({}).sort({ createdAt: -1 }).limit(5).toArray(),
     reviews.find({ status: "PENDING" }).sort({ createdAt: -1 }).limit(5).toArray(),
   ]);
@@ -55,10 +51,8 @@ async function getDashboardData() {
     counts: {
       totalUsers,
       newEnquiries,
-      inProgressEnquiries,
       pendingReviews,
       approvedReviews,
-      hiddenOrRejectedReviews,
     },
     recentEnquiries,
     recentPendingReviews,
@@ -72,11 +66,6 @@ export default async function AdminOverviewPage() {
     { label: "Total users", value: counts.totalUsers, href: "/admin/users" },
     { label: "New enquiries", value: counts.newEnquiries, href: "/admin/enquiries?status=NEW" },
     {
-      label: "Enquiries in progress",
-      value: counts.inProgressEnquiries,
-      href: "/admin/enquiries?status=IN_PROGRESS",
-    },
-    {
       label: "Pending reviews",
       value: counts.pendingReviews,
       href: "/admin/reviews?status=PENDING",
@@ -86,18 +75,12 @@ export default async function AdminOverviewPage() {
       value: counts.approvedReviews,
       href: "/admin/reviews?status=APPROVED",
     },
-    {
-      label: "Hidden / rejected reviews",
-      value: counts.hiddenOrRejectedReviews,
-      href: "/admin/reviews",
-    },
   ];
 
   const quickLinks = [
     { label: "Review new enquiries", href: "/admin/enquiries?status=NEW" },
     { label: "Moderate pending reviews", href: "/admin/reviews?status=PENDING" },
     { label: "Manage users", href: "/admin/users" },
-    { label: "Update site settings", href: "/admin/settings" },
   ];
 
   return (

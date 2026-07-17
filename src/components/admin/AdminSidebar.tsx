@@ -11,8 +11,6 @@ const navItems = [
   { href: "/admin/enquiries", label: "Enquiries" },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/media", label: "Media" },
-  { href: "/admin/settings", label: "Settings" },
 ] as const;
 
 type AdminUser = {

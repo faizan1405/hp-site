@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Geist } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
-import { SiteNav } from "@/components/SiteNav";
+import { PublicSiteChrome } from "@/components/PublicSiteChrome";
 import { assets, brand, product, scenes, seo, siteName } from "@/config/content";
 import "./globals.css";
 
@@ -100,8 +100,7 @@ export default function RootLayout({
       </head>
       <body>
         <SessionProvider>
-          <SiteNav />
-          {children}
+          <PublicSiteChrome>{children}</PublicSiteChrome>
         </SessionProvider>
       </body>
     </html>
