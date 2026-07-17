@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      // Google account profile photos, shown in the nav and dashboard.
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      // Cloudinary-hosted profile, review and site-media uploads.
+      { protocol: "https", hostname: "res.cloudinary.com" },
+    ],
+  },
   async headers() {
     return [
       {

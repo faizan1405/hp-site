@@ -1,5 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ObjectId } from "mongodb";
+import { requireSessionForPage } from "@/lib/admin";
+import {
+  contactEnquiriesCollection,
+  customerProfilesCollection,
+  reviewsCollection,
+  usersCollection,
+  type ContactEnquiryStatus,
+  type ReviewStatus,
+} from "@/lib/db/schema";
+import { ProfileForm } from "@/components/dashboard/ProfileForm";
+import { ProfileImageUploader } from "@/components/dashboard/ProfileImageUploader";
+import { SignOutButton } from "@/components/SignOutButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { buyNowWhatsappHref, dashboard, pageSeo } from "@/config/content";
@@ -13,21 +26,58 @@ export const metadata: Metadata = {
     description: pageSeo.dashboard.description,
     url: "/dashboard",
   },
-  // A logged-out account shell should not be indexed as content.
   robots: { index: false, follow: true },
 };
 
-/**
- * The customer dashboard. This project has NO authentication or account backend,
- * so nothing here is live data and nothing pretends to be — the page is an
- * honest preview of the account area, with a clear notice explaining that
- * sign-in requires backend work that does not yet exist. The two things that DO
- * work today — WhatsApp support and the contact shortcut — are real links.
- *
- * When accounts are built, replace this static preview with the authenticated
- * views; the feature list in `content.ts` already names each panel.
- */
-export default function DashboardPage() {
+export const dynamic = "force-dynamic";
+
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const enquiryStatusStyles: Record<ContactEnquiryStatus, string> = {
+  NEW: "border-glacier-500/30 bg-glacier-500/10 text-glacier-300",
+  IN_PROGRESS: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+  RESOLVED: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+  SPAM: "border-red-400/30 bg-red-400/10 text-red-300",
+};
+
+const reviewStatusStyles: Record<ReviewStatus, string> = {
+  PENDING: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+  APPROVED: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+  REJECTED: "border-red-400/30 bg-red-400/10 text-red-300",
+  HIDDEN: "border-white/20 bg-white/5 text-silver-dim",
+};
+
+function StatusBadge({ label, className }: { label: string; className: string }) {
+  return (
+    <span
+      className={`rounded-full border px-2.5 py-0.5 text-[0.65rem] tracking-wide uppercase ${className}`}
+    >
+      {label.replace("_", " ").toLowerCase()}
+    </span>
+  );
+}
+
+export default async function DashboardPage() {
+  const session = await requireSessionForPage("/dashboard");
+  const userId = new ObjectId(session.user.id);
+
+  const [userDoc, profile, enquiries, reviews] = await Promise.all([
+    (await usersCollection()).findOne({ _id: userId }),
+    (await customerProfilesCollection()).findOne({ userId }),
+    (await contactEnquiriesCollection())
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .toArray(),
+    (await reviewsCollection()).find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
+  ]);
+
+  const memberSince = userDoc?.createdAt ? dateFormatter.format(userDoc.createdAt) : null;
+
   return (
     <main className="relative min-h-screen bg-navy-900">
       <div
@@ -42,56 +92,140 @@ export default function DashboardPage() {
         <h1 className="mt-6 font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-5xl md:text-6xl">
           {dashboard.heading}
         </h1>
-        <p className="mt-6 max-w-xl text-base leading-relaxed text-pretty text-silver md:text-lg">
-          {dashboard.intro}
-        </p>
       </section>
 
-      {/* Honest notice — no faked login, no faked data. */}
-      <section className="mx-auto max-w-4xl px-6 pb-10">
-        <div className="flex items-start gap-3 rounded-2xl border border-glacier-500/25 bg-glacier-500/5 p-5">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="mt-0.5 h-5 w-5 shrink-0 text-glacier-300"
-          >
-            <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 15h-2v-2h2v2Zm0-4h-2V7h2v6Z" />
-          </svg>
-          <p className="text-sm leading-relaxed text-pretty text-silver">
-            {dashboard.notice}
-          </p>
-        </div>
-      </section>
-
-      {/* Preview of the account panels. Clearly labelled, not populated. */}
-      <section className="mx-auto max-w-4xl px-6 pb-12">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {dashboard.features.map((feature) => (
-            <div
-              key={feature.id}
-              className="rounded-2xl border border-white/10 bg-navy-900/50 p-6"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-display text-xl leading-tight font-light text-ice">
-                  {feature.title}
-                </h2>
-                <span className="rounded-full border border-white/15 px-2.5 py-0.5 text-[0.6rem] tracking-[0.15em] text-silver-dim uppercase">
-                  Sign-in required
-                </span>
-              </div>
-              <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
-                {feature.body}
+      {/* Profile summary. */}
+      <section className="mx-auto max-w-4xl px-6 pb-8">
+        <div className="flex flex-col gap-5 rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <ProfileImageUploader
+              currentImageUrl={profile?.image?.url ?? session.user.image ?? null}
+              fallbackLabel={session.user.name ?? session.user.email ?? "?"}
+            />
+            <div>
+              <p className="font-display text-xl leading-tight font-light text-ice">
+                {session.user.name ?? "Your account"}
               </p>
+              <p className="text-sm text-silver">{session.user.email}</p>
+              {memberSince && (
+                <p className="text-[0.7rem] text-silver-dim">Member since {memberSince}</p>
+              )}
             </div>
-          ))}
+          </div>
+          <SignOutButton className="inline-flex min-h-11 items-center justify-center self-start rounded-full border border-white/15 bg-white/5 px-6 py-2.5 text-sm font-medium tracking-wide text-ice transition-colors hover:bg-white/10 sm:self-center" />
         </div>
       </section>
 
-      {/* The parts that genuinely work today. */}
+      {/* Profile & address. */}
+      <section className="mx-auto max-w-4xl px-6 pb-8">
+        <div className="rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-8">
+          <h2 className="font-display text-2xl leading-tight font-light text-ice">
+            Profile &amp; contact details
+          </h2>
+          <p className="mt-2 text-sm text-silver">{dashboard.features[0]?.body}</p>
+          <div className="mt-6">
+            <ProfileForm
+              defaultValues={{
+                phone: profile?.phone ?? "",
+                address: profile?.address ?? "",
+                city: profile?.city ?? "",
+                state: profile?.state ?? "",
+                postalCode: profile?.postalCode ?? "",
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Your enquiries. */}
+      <section className="mx-auto max-w-4xl px-6 pb-8">
+        <div className="rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-8">
+          <h2 className="font-display text-2xl leading-tight font-light text-ice">
+            Your enquiries
+          </h2>
+          {enquiries.length === 0 ? (
+            <p className="mt-3 text-sm text-silver">
+              You haven&apos;t sent any enquiries yet. Reach us from the{" "}
+              <Link href="/contact" className="text-glacier-300 underline underline-offset-2">
+                contact page
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="mt-4 flex flex-col gap-3">
+              {enquiries.map((enquiry) => (
+                <li
+                  key={enquiry._id.toString()}
+                  className="rounded-xl border border-white/10 bg-white/5 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-ice">
+                      {enquiry.subject ?? "General enquiry"}
+                    </p>
+                    <StatusBadge
+                      label={enquiry.status}
+                      className={enquiryStatusStyles[enquiry.status]}
+                    />
+                  </div>
+                  <p className="mt-1.5 line-clamp-2 text-sm text-silver">{enquiry.message}</p>
+                  <p className="mt-2 text-[0.7rem] text-silver-dim">
+                    {dateFormatter.format(enquiry.createdAt)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {/* Your reviews. */}
+      <section className="mx-auto max-w-4xl px-6 pb-12">
+        <div className="rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-8">
+          <h2 className="font-display text-2xl leading-tight font-light text-ice">
+            Your reviews
+          </h2>
+          {reviews.length === 0 ? (
+            <p className="mt-3 text-sm text-silver">
+              You haven&apos;t submitted a review yet. Share your experience on the{" "}
+              <Link href="/reviews" className="text-glacier-300 underline underline-offset-2">
+                reviews page
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="mt-4 flex flex-col gap-3">
+              {reviews.map((review) => (
+                <li
+                  key={review._id.toString()}
+                  className="rounded-xl border border-white/10 bg-white/5 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-ice">
+                      {review.title ?? `${review.rating} / 5`}
+                    </p>
+                    <StatusBadge
+                      label={review.status}
+                      className={reviewStatusStyles[review.status]}
+                    />
+                  </div>
+                  <p className="mt-1.5 line-clamp-2 text-sm text-silver">{review.text}</p>
+                  {review.status === "REJECTED" && review.adminNote && (
+                    <p className="mt-2 text-xs text-red-300">Note: {review.adminNote}</p>
+                  )}
+                  <p className="mt-2 text-[0.7rem] text-silver-dim">
+                    {dateFormatter.format(review.createdAt)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {/* Support — always real links. */}
       <section className="mx-auto max-w-4xl px-6 pb-24">
         <p className="font-mono text-[0.65rem] tracking-[0.3em] text-glacier-300 uppercase">
-          Available now
+          Support
         </p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <a

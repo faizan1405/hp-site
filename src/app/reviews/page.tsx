@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { reviewsCollection } from "@/lib/db/schema";
 import { ReviewForm } from "@/components/ReviewForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { pageSeo, reviews } from "@/config/content";
@@ -18,6 +22,10 @@ export const metadata: Metadata = {
     description: pageSeo.reviews.description,
   },
 };
+
+/** Real, moderated reviews only — read fresh on every request rather than
+ * risking a build-time snapshot going stale as moderation happens. */
+export const dynamic = "force-dynamic";
 
 /** Renders a row of five stars, filling `count` of them. */
 function Stars({ count }: { count: number }) {
@@ -47,8 +55,28 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
 });
 
-export default function ReviewsPage() {
-  const { approved } = reviews;
+async function getApprovedReviews() {
+  const collection = await reviewsCollection();
+  const docs = await collection
+    .find({ status: "APPROVED" })
+    .sort({ approvedAt: -1, createdAt: -1 })
+    .limit(60)
+    .toArray();
+
+  return docs.map((doc) => ({
+    id: doc._id.toString(),
+    name: doc.customerName,
+    rating: doc.rating,
+    title: doc.title,
+    text: doc.text,
+    date: (doc.approvedAt ?? doc.createdAt).toISOString(),
+    verifiedPurchase: doc.isVerifiedPurchase,
+    images: doc.images,
+  }));
+}
+
+export default async function ReviewsPage() {
+  const [session, approved] = await Promise.all([auth(), getApprovedReviews()]);
 
   return (
     <main className="relative min-h-screen bg-navy-900">
@@ -89,9 +117,32 @@ export default function ReviewsPage() {
                     </span>
                   )}
                 </div>
-                <p className="mt-4 text-sm leading-relaxed text-pretty text-silver">
+                {review.title && (
+                  <p className="mt-3 font-display text-lg leading-tight font-light text-ice">
+                    {review.title}
+                  </p>
+                )}
+                <p className="mt-2 text-sm leading-relaxed text-pretty text-silver">
                   {review.text}
                 </p>
+                {review.images.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {review.images.map((image) => (
+                      <div
+                        key={image.publicId}
+                        className="relative h-16 w-16 overflow-hidden rounded-lg border border-white/10"
+                      >
+                        <Image
+                          src={image.url}
+                          alt=""
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <p className="mt-4 text-sm text-ice">{review.name}</p>
                 <p className="text-[0.7rem] text-silver-dim">
                   {dateFormatter.format(new Date(review.date))}
@@ -102,7 +153,7 @@ export default function ReviewsPage() {
         )}
       </section>
 
-      {/* Submission form. */}
+      {/* Submission form — signed-in users only. */}
       <section className="mx-auto max-w-2xl px-6 pb-24">
         <div className="rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-8">
           <h2 className="font-display text-2xl leading-tight font-light text-ice md:text-3xl">
@@ -112,7 +163,22 @@ export default function ReviewsPage() {
             {reviews.formIntro}
           </p>
           <div className="mt-6">
-            <ReviewForm />
+            {session?.user ? (
+              <ReviewForm />
+            ) : (
+              <div className="flex flex-col items-start gap-4 rounded-xl border border-white/10 bg-white/5 p-5">
+                <p className="text-sm leading-relaxed text-pretty text-silver">
+                  Sign in with Google to write a review — this keeps reviews
+                  tied to a real account.
+                </p>
+                <Link
+                  href={`/signin?callbackUrl=${encodeURIComponent("/reviews")}`}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-ice px-6 py-2.5 text-sm font-medium tracking-wide text-navy-900 transition-colors hover:bg-white"
+                >
+                  Sign in to write a review
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </section>

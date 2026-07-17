@@ -24,6 +24,116 @@ npm run frames  # re-extract the glacier frames (needs FFmpeg on the PATH)
 npm run test:e2e
 ```
 
+## Backend & accounts
+
+MongoDB, Google Sign-In (Auth.js v5), Cloudinary image uploads, a protected
+customer dashboard and an admin panel. Node.js runtime throughout (MongoDB and
+Auth.js's database session strategy both need it — nothing here runs on Edge).
+
+### Environment setup
+
+1. Copy the template: `cp .env.example .env.local` (never commit `.env.local`
+   — it's gitignored via the repo's `.env*` rule).
+2. Fill in every variable below, then restart `next dev`.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `MONGODB_URI` | Yes | Atlas (or any) connection string |
+| `MONGODB_DB_NAME` | No (defaults to `himalaya_sparsh`) | Database name |
+| `AUTH_SECRET` | Yes | Signs Auth.js session cookies — generate with `npx auth secret` or `openssl rand -base64 32` |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Yes | Google OAuth client credentials |
+| `AUTH_TRUST_HOST` | Recommended (`true`) | Required by Auth.js on most hosts other than Vercel's own edge network |
+| `NEXT_PUBLIC_SITE_URL` | Recommended | Canonical site URL — also used for metadata/OG tags (see "Content" below) |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | No — uploads 400 until set | Image uploads (profile photos, review photos) |
+| `ADMIN_EMAILS` | No | Comma-separated Google account emails auto-promoted to `ADMIN` on sign-in |
+| `CONTACT_RECEIVER_EMAIL` | No | Where contact-form notification emails go, if Resend is configured |
+| `RESEND_API_KEY` / `EMAIL_FROM` | No | Enables the optional contact-notification email. Enquiries save to MongoDB either way — this only adds a notification on top |
+
+The server never reads these eagerly: a missing **optional** var (Cloudinary,
+Resend) degrades that one feature rather than breaking `npm run build`; a
+missing **required** var throws a clear error the first time something tries
+to use it (`src/lib/env.ts`), not at build time.
+
+### MongoDB setup
+
+1. Create a free Atlas cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas).
+2. Create a database user with `readWrite` on the database named by
+   `MONGODB_DB_NAME`.
+3. Network access: for Vercel, either allow `0.0.0.0/0` (Atlas will flag this
+   as a security risk — acceptable for serverless with no fixed egress IPs,
+   but tighten it if Atlas's own [Vercel integration](https://www.mongodb.com/docs/atlas/reference/partner-integrations/vercel/)
+   is available for your plan, since it manages IP access automatically) or
+   use [Vercel's native Atlas integration](https://vercel.com/marketplace) if
+   offered in your region.
+4. Copy the `mongodb+srv://...` connection string into `MONGODB_URI` — both
+   locally and in Vercel Project Settings → Environment Variables.
+5. Indexes (unique email, status/date lookups) are created automatically on
+   first write — no manual migration step.
+
+### Google OAuth setup
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
+   create an OAuth 2.0 Client ID (Application type: **Web application**).
+2. Add these Authorized redirect URIs:
+   - Local: `http://localhost:3000/api/auth/callback/google`
+   - Production: `https://YOUR-PRODUCTION-DOMAIN/api/auth/callback/google`
+     (add this once the real domain is known — it is never hardcoded
+     anywhere in this codebase)
+3. Copy the Client ID and Client secret into `AUTH_GOOGLE_ID` and
+   `AUTH_GOOGLE_SECRET`.
+4. To make an account an admin, add its Google email to `ADMIN_EMAILS`
+   (comma-separated) before or after it first signs in — the role is checked
+   on every sign-in, so adding an email later promotes the existing account
+   the next time it logs in.
+
+### Cloudinary setup
+
+1. Create a free account at [cloudinary.com](https://cloudinary.com).
+2. Copy Cloud name, API Key and API Secret from the dashboard into
+   `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`.
+3. No bucket/folder setup needed — `himalaya-sparsh/profiles`,
+   `himalaya-sparsh/reviews` and `himalaya-sparsh/site` are created
+   automatically on first upload to each.
+
+### Deploying to Vercel
+
+1. Add every variable above in Project Settings → Environment Variables (for
+   Production, and again for Preview if you want preview deploys to have a
+   working backend).
+2. Set `NEXT_PUBLIC_SITE_URL` to the real `https://` domain, and register that
+   domain's `/api/auth/callback/google` URL with Google (see above).
+3. Redeploy after adding or changing environment variables — Vercel only
+   picks them up on a new build.
+4. MongoDB connections are cached per warm serverless instance
+   (`src/lib/mongodb.ts`), so normal traffic does not open a new connection
+   per request.
+
+### What's implemented
+
+- **Auth**: Google sign-in only, via Auth.js v5 (`next-auth@beta`) with the
+  official MongoDB adapter — one `users` collection, deduped by Google
+  account, extended with `role` (`USER`/`ADMIN`), `isActive`, and timestamps.
+- **Dashboard** (`/dashboard`): protected, shows the real signed-in profile,
+  an editable phone/address form, a Cloudinary profile-photo uploader, and
+  the user's own contact enquiries and reviews with live moderation status.
+  No fake orders — there is no ordering backend yet.
+- **Admin** (`/admin`): protected by `role === "ADMIN"` and `isActive`,
+  independently re-checked in every server action (not just the page).
+  Overview counts, contact-enquiry triage, review moderation (approve /
+  reject / hide / delete / internal note), and user management (activate,
+  deactivate, promote, demote — an admin can't lock themselves out).
+- **Contact form** (`/contact`): posts to `/api/contact` — server-side Zod
+  validation, honeypot, per-IP rate limiting, plain-text sanitization,
+  persisted to MongoDB regardless of whether email is configured.
+- **Reviews** (`/reviews`): signed-in users only can submit; new reviews are
+  `PENDING` and invisible publicly until an admin approves them. Optional
+  photo uploads (up to 4, JPEG/PNG/WebP, 5MB each) go through
+  `/api/upload/review`, validated and stored server-side.
+- **Rate limiting** is in-memory and per-process (`src/lib/rate-limit.ts`) —
+  fine for a single warm instance, but not a durable multi-instance limit.
+  For a guaranteed limit under real scale, swap in a durable store (e.g.
+  Upstash Redis via the Vercel Marketplace); the call sites don't change.
+
 ## Assets
 
 | Path | Status |

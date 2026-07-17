@@ -1,23 +1,16 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { contact } from "@/config/content";
 
 /**
- * A contact form that is honest about what it can and cannot do. There is no
- * email service, API or database wired to this site, so this form does NOT claim
- * to store or send anything server-side. Instead it validates client-side and,
- * on success, opens the visitor's own mail client with the message pre-filled
- * (`mailto:`) — a real action the visitor completes, not a fake "submitted!"
- * that goes nowhere.
- *
- * Spam protection: a hidden honeypot field (`company`) that a human never sees
- * and never fills; a submission that fills it is silently dropped. Wiring this
- * to a real backend later means replacing `handleSubmit`'s mailto handoff with a
- * fetch to that endpoint — the validation and state below stay as they are.
+ * Persists a contact enquiry through `POST /api/contact` (server-side Zod
+ * validation, honeypot check, rate limiting — see that route). Client-side
+ * validation here is purely for immediate feedback; the server never trusts
+ * it and re-validates everything.
  */
 
 type Errors = Partial<Record<"name" | "email" | "message", string>>;
+type Status = "idle" | "submitting" | "success" | "error";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -27,24 +20,23 @@ const labelClass = "text-sm font-medium text-silver";
 
 export function ContactForm() {
   const [errors, setErrors] = useState<Errors>({});
-  const [status, setStatus] = useState<"idle" | "success">("idle");
+  const [status, setStatus] = useState<Status>("idle");
+  const [serverMessage, setServerMessage] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
 
   const nameId = useId();
   const emailId = useId();
   const messageId = useId();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
 
-    // Honeypot: if this hidden field is filled, treat as spam and drop silently.
-    if ((data.get("company") as string)?.trim()) return;
-
     const name = (data.get("name") as string)?.trim() ?? "";
     const email = (data.get("email") as string)?.trim() ?? "";
     const message = (data.get("message") as string)?.trim() ?? "";
+    const company = (data.get("company") as string)?.trim() ?? "";
 
     const nextErrors: Errors = {};
     if (!name) nextErrors.name = "Please enter your name.";
@@ -56,14 +48,50 @@ export function ContactForm() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    // No backend: hand off to the visitor's mail client with everything filled.
-    if (contact.email) {
-      const subject = encodeURIComponent(`Enquiry from ${name}`);
-      const body = encodeURIComponent(`${message}\n\n— ${name}\n${email}`);
-      window.location.href = `mailto:${contact.email}?subject=${subject}&body=${body}`;
+    setStatus("submitting");
+    setServerMessage(null);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message, company }),
+      });
+
+      if (response.ok) {
+        setStatus("success");
+        form.reset();
+        return;
+      }
+
+      if (response.status === 400) {
+        const body = (await response.json()) as {
+          fieldErrors?: Record<string, string[]>;
+        };
+        const fieldErrors: Errors = {};
+        for (const [field, messages] of Object.entries(body.fieldErrors ?? {})) {
+          if (messages?.[0] && (field === "name" || field === "email" || field === "message")) {
+            fieldErrors[field] = messages[0];
+          }
+        }
+        setErrors(fieldErrors);
+        setStatus("error");
+        setServerMessage("Please check the highlighted fields.");
+        return;
+      }
+
+      if (response.status === 429) {
+        setStatus("error");
+        setServerMessage("You've sent a few messages already — please try again shortly.");
+        return;
+      }
+
+      setStatus("error");
+      setServerMessage("Something went wrong sending your message. Please try again.");
+    } catch {
+      setStatus("error");
+      setServerMessage("Something went wrong sending your message. Please try again.");
     }
-    setStatus("success");
-    form.reset();
   };
 
   return (
@@ -145,21 +173,28 @@ export function ContactForm() {
 
       <button
         type="submit"
-        className="inline-flex min-h-12 items-center justify-center rounded-full bg-ice px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors hover:bg-white"
+        disabled={status === "submitting"}
+        className="inline-flex min-h-12 items-center justify-center rounded-full bg-ice px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors hover:bg-white disabled:opacity-70"
       >
-        Send message
+        {status === "submitting" ? "Sending…" : "Send message"}
       </button>
 
-      {/* Success is worded truthfully: it opened your mail app; it did not store
-          anything on a server, because there is no server to store it on. */}
       <p
         role="status"
         aria-live="polite"
-        className={`text-sm ${status === "success" ? "text-glacier-300" : "sr-only"}`}
+        className={`text-sm ${
+          status === "success"
+            ? "text-glacier-300"
+            : status === "error"
+              ? "text-red-300"
+              : "sr-only"
+        }`}
       >
         {status === "success"
-          ? "Thanks — your email app should have opened with your message ready to send. If it didn't, please email or WhatsApp us using the details above."
-          : ""}
+          ? "Thanks — your message has been sent to our team. We'll get back to you soon."
+          : status === "error"
+            ? serverMessage
+            : ""}
       </p>
     </form>
   );

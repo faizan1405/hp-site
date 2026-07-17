@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { contact, nav, product } from "@/config/content";
 
 /**
@@ -20,6 +22,7 @@ import { contact, nav, product } from "@/config/content";
  */
 export function SiteNav() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +58,51 @@ export function SiteNav() {
   const phoneHref = contact.phone
     ? `tel:${contact.phone.replace(/[^\d+]/g, "")}`
     : null;
+
+  // Session-aware sign-in / sign-out control. `useSession` resolves from a
+  // client fetch after hydration rather than a server auth check, so the nav
+  // — and every static page it sits on — never has to opt into dynamic
+  // rendering just to know who's signed in.
+  const authControl =
+    status === "loading" ? (
+      <span
+        aria-hidden="true"
+        className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-white/10"
+      />
+    ) : session?.user ? (
+      <button
+        type="button"
+        onClick={() => signOut({ callbackUrl: "/" })}
+        className="flex h-11 items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs font-medium text-silver transition-colors hover:text-ice lg:h-auto lg:border lg:border-white/15 lg:bg-white/5"
+      >
+        {session.user.image ? (
+          <Image
+            src={session.user.image}
+            alt=""
+            width={26}
+            height={26}
+            className="h-6 w-6 shrink-0 rounded-full"
+            unoptimized
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-glacier-500/30 text-[0.6rem] text-ice"
+          >
+            {(session.user.name ?? session.user.email ?? "?").charAt(0).toUpperCase()}
+          </span>
+        )}
+        <span className="hidden sm:inline">Sign out</span>
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={() => signIn("google")}
+        className="flex h-11 items-center rounded-full px-3 text-xs font-medium whitespace-nowrap text-silver transition-colors hover:text-ice lg:h-auto lg:border lg:border-white/15 lg:bg-white/5 lg:py-1.5"
+      >
+        Sign in
+      </button>
+    );
 
   return (
     <header className="fixed inset-x-0 top-0 z-30 flex justify-center px-4 pt-4 sm:px-6">
@@ -113,6 +161,10 @@ export function SiteNav() {
               </a>
             )}
 
+            {/* Auth control — lg and up. The mobile equivalent lives in the
+                collapsible panel below so it doesn't compete for pill width. */}
+            <div className="hidden lg:block">{authControl}</div>
+
             {/* Toggle — below lg only. */}
             <button
               ref={toggleRef}
@@ -170,6 +222,7 @@ export function SiteNav() {
                 );
               })}
             </ul>
+            <div className="mt-2 border-t border-white/10 px-4 pt-3">{authControl}</div>
           </nav>
         )}
       </div>

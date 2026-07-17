@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Geist } from "next/font/google";
+import { SessionProvider } from "next-auth/react";
 import { SiteNav } from "@/components/SiteNav";
 import { assets, brand, product, scenes, seo, siteName } from "@/config/content";
 import "./globals.css";
@@ -98,8 +99,10 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <SiteNav />
-        {children}
+        <SessionProvider>
+          <SiteNav />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
