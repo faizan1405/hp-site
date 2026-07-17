@@ -33,7 +33,15 @@ function initials(name: string): string {
 export default function LeadershipPage() {
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
-      <PageBackground src={pageBackgrounds.leadership} />
+      {/* Sunrise peak sits left-of-frame with open sky to its right — bias
+          toward that negative space so the founder portrait and text don't
+          land on the brightest, busiest part of the photo. Overlay is
+          slightly stronger here since more of the bright sky stays visible. */}
+      <PageBackground
+        src={pageBackgrounds.leadership}
+        objectPosition="object-[68%_45%] sm:object-[62%_45%] lg:object-[58%_40%]"
+        overlayClassName="bg-gradient-to-b from-navy-900/55 via-navy-900/68 to-navy-900/78"
+      />
 
       <div
         aria-hidden="true"

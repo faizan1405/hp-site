@@ -443,16 +443,15 @@ export const assets = {
 export const deviceImage = { width: 424, height: 1330 } as const;
 
 /**
- * Static, non-3D background stills for the content pages (About, Leadership,
- * Reviews, Contact). Each is an existing frame from the homepage's glacier
- * footage (or its poster), reused rather than sourcing new photography, so
- * every themed background already matches the site's own imagery.
+ * Static background photographs for the content pages (About, Leadership,
+ * Reviews, Contact) — client-supplied stills, distinct from the homepage's
+ * frame-sequence footage (still used for the scroll experience itself).
  */
 export const pageBackgrounds = {
-  about: assets.poster,
-  leadership: `${frames.desktop.path}/frame-0090.webp`,
-  reviews: `${frames.desktop.path}/frame-0180.webp`,
-  contact: `${frames.desktop.path}/frame-0140.webp`,
+  about: "/images/page-backgrounds/about-us.webp",
+  leadership: "/images/page-backgrounds/leadership.webp",
+  reviews: "/images/page-backgrounds/reviews.webp",
+  contact: "/images/page-backgrounds/contact-us.webp",
 } as const;
 
 export const brand = {

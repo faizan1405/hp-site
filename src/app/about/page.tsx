@@ -34,7 +34,12 @@ const eyebrowClass =
 export default function AboutPage() {
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
-      <PageBackground src={pageBackgrounds.about} />
+      {/* Focal peak sits right-of-centre in the source photo; keep it in
+          frame without letting it crowd the long story paragraphs. */}
+      <PageBackground
+        src={pageBackgrounds.about}
+        objectPosition="object-[68%_50%] sm:object-[58%_50%] lg:object-[50%_42%]"
+      />
 
       {/* Soft glacier-blue glow behind the hero, matching the rest of the site. */}
       <div

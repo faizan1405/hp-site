@@ -81,7 +81,13 @@ export default async function ReviewsPage() {
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-navy-900">
-      <PageBackground src={pageBackgrounds.reviews} />
+      {/* Calm, near-symmetrical reflection — a light center bias keeps the
+          busier rock cluster in the bottom-left corner out of the way of
+          the review cards. */}
+      <PageBackground
+        src={pageBackgrounds.reviews}
+        objectPosition="object-[55%_50%] sm:object-[52%_48%] lg:object-[50%_45%]"
+      />
 
       <div
         aria-hidden="true"

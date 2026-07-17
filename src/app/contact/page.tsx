@@ -52,7 +52,12 @@ export default function ContactPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
       />
 
-      <PageBackground src={pageBackgrounds.contact} />
+      {/* Biased toward the hazy, calm side of the valley so the busier
+          rocks/stream on the right don't sit directly behind the form. */}
+      <PageBackground
+        src={pageBackgrounds.contact}
+        objectPosition="object-[40%_55%] sm:object-[42%_55%] lg:object-[45%_50%]"
+      />
 
       <div
         aria-hidden="true"
