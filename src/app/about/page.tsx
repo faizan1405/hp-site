@@ -1,19 +1,33 @@
 import type { Metadata } from "next";
-import { about, aboutWhatsappHref, contact, product, scenes } from "@/config/content";
+import Link from "next/link";
+import { SiteFooter } from "@/components/SiteFooter";
+import {
+  about,
+  deviceLayers,
+  fruitComparison,
+  ingredientBenefits,
+  pageSeo,
+} from "@/config/content";
 
 export const metadata: Metadata = {
-  title: about.heading,
-  description: about.intro,
+  title: pageSeo.about.title,
+  description: pageSeo.about.description,
   alternates: { canonical: "/about" },
   openGraph: {
-    title: about.heading,
-    description: about.intro,
+    title: pageSeo.about.title,
+    description: pageSeo.about.description,
     url: "/about",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: pageSeo.about.title,
+    description: pageSeo.about.description,
   },
 };
 
-const cardClass =
-  "rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-7";
+const cardClass = "rounded-2xl border border-white/15 bg-navy-900/70 p-6 sm:p-7";
+const eyebrowClass =
+  "font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase";
 
 export default function AboutPage() {
   return (
@@ -25,107 +39,216 @@ export default function AboutPage() {
       />
 
       {/* Hero. Top padding clears the fixed SiteNav pill. */}
-      <section className="mx-auto max-w-3xl px-6 pt-28 pb-16 text-center sm:pt-36 sm:pb-20">
-        <p className="font-mono text-[0.7rem] tracking-[0.4em] text-glacier-300 uppercase">
-          {about.eyebrow}
-        </p>
+      <section className="mx-auto max-w-3xl px-6 pt-28 pb-14 text-center sm:pt-36">
+        <p className={eyebrowClass}>{about.eyebrow}</p>
         <h1 className="mt-6 font-display text-4xl leading-[1.05] font-light text-balance text-ice sm:text-5xl md:text-6xl">
           {about.heading}
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-pretty text-silver md:text-lg">
-          {about.intro}
+        <p className="mx-auto mt-5 max-w-xl text-lg text-pretty text-glacier-300 md:text-xl">
+          {about.subheading}
         </p>
       </section>
 
-      {/* Company introduction */}
-      <section className="mx-auto max-w-3xl px-6 pb-20">
-        <div className={cardClass}>
-          <p className="font-mono text-[0.65rem] tracking-[0.35em] text-glacier-300 uppercase">
-            {product.descriptor}
-          </p>
-          <p className="mt-4 text-base leading-relaxed text-pretty text-silver md:text-lg">
-            {scenes.device.intro.body}
-          </p>
-        </div>
-      </section>
-
-      {/* Contact information */}
-      <section className="mx-auto max-w-3xl px-6 pb-28 sm:pb-32">
-        <p className="text-center font-mono text-[0.7rem] tracking-[0.35em] text-glacier-300 uppercase">
-          {about.contactHeading}
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {contact.phone && (
-            <div className={cardClass}>
-              <p className="text-[0.7rem] tracking-[0.2em] text-silver-dim uppercase">
-                Phone
-              </p>
-              <a
-                href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`}
-                className="mt-2 block text-lg text-ice transition-colors hover:text-glacier-300"
-              >
-                {contact.phone}
-              </a>
-            </div>
-          )}
-
-          {contact.email && (
-            <div className={cardClass}>
-              <p className="text-[0.7rem] tracking-[0.2em] text-silver-dim uppercase">
-                Email
-              </p>
-              <a
-                href={`mailto:${contact.email}`}
-                className="mt-2 block text-lg break-all text-ice transition-colors hover:text-glacier-300"
-              >
-                {contact.email}
-              </a>
-            </div>
-          )}
-
-          {contact.address && (
-            <div className={cardClass}>
-              <p className="text-[0.7rem] tracking-[0.2em] text-silver-dim uppercase">
-                Address
-              </p>
-              <address className="mt-2 text-base leading-relaxed text-pretty text-ice not-italic">
-                {contact.address}
-              </address>
-            </div>
-          )}
-
-          {contact.hours && (
-            <div className={cardClass}>
-              <p className="text-[0.7rem] tracking-[0.2em] text-silver-dim uppercase">
-                Business hours
-              </p>
-              <p className="mt-2 text-base text-ice">{contact.hours}</p>
-            </div>
-          )}
-        </div>
-
-        {aboutWhatsappHref && (
-          <div className="mt-8 flex justify-center">
-            <a
-              href={aboutWhatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-ice px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors duration-200 hover:bg-white"
+      {/* Brand story — the client's own copy, paragraph by paragraph. */}
+      <section className="mx-auto max-w-3xl px-6 pb-16">
+        <div className="flex flex-col gap-5">
+          {about.body.map((paragraph, index) => (
+            <p
+              key={index}
+              className="text-base leading-relaxed text-pretty text-silver md:text-lg"
             >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                fill="currentColor"
-              >
-                <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.46 3.44 1.26 4.89L2 22l5.24-1.27a9.96 9.96 0 0 0 4.8 1.22h.01c5.52 0 10-4.48 10-10s-4.49-10-10.01-10Zm0 18.13h-.01a8.1 8.1 0 0 1-4.14-1.14l-.3-.17-3.1.75.83-3.02-.19-.31a8.13 8.13 0 0 1-1.25-4.24c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.23.85 5.77 2.39a8.1 8.1 0 0 1 2.39 5.78c0 4.51-3.67 8.12-8.17 8.12Zm4.48-6.11c-.24-.12-1.44-.71-1.67-.79-.22-.08-.39-.12-.55.12-.16.24-.63.79-.78.95-.14.16-.28.18-.53.06-.24-.12-1.03-.38-1.96-1.21-.72-.64-1.21-1.44-1.35-1.68-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.42-.55-.42-.14 0-.3-.01-.46-.01-.16 0-.42.06-.64.3-.22.24-.85.83-.85 2.02 0 1.19.87 2.34 1 2.5.12.16 1.71 2.61 4.14 3.66.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.44-.59 1.64-1.15.2-.57.2-1.05.14-1.15-.06-.1-.22-.16-.46-.28Z" />
-              </svg>
-              Chat on WhatsApp
-            </a>
-          </div>
-        )}
+              {paragraph}
+            </p>
+          ))}
+        </div>
+
+        {/* Closing sign-off. */}
+        <div className="mt-12 border-t border-white/10 pt-8 text-center">
+          <p className="font-display text-2xl font-light text-ice md:text-3xl">
+            {about.closing.name}
+          </p>
+          <p className="mt-3 text-sm tracking-wide text-silver md:text-base">
+            {about.closing.descriptor}
+          </p>
+          <p className="mt-2 font-display text-lg text-glacier-300 md:text-xl">
+            {about.closing.tagline}
+          </p>
+        </div>
       </section>
+
+      {/* -------------------------------------------------------------- *
+          A. INGREDIENTS — the nine confirmed device media, in journey order.
+          Reuses `deviceLayers`, the single source of truth also driving the
+          homepage walk, so the two can never disagree.
+          -------------------------------------------------------------- */}
+      <section
+        id="ingredients"
+        className="mx-auto max-w-5xl scroll-mt-24 px-6 py-16 md:py-20"
+      >
+        <p className={eyebrowClass}>{about.ingredientsHeading}</p>
+        <h2 className="mt-4 font-display text-3xl leading-tight font-light text-balance text-ice md:text-4xl">
+          Inside the device
+        </h2>
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-pretty text-silver md:text-lg">
+          {about.ingredientsIntro}
+        </p>
+
+        <ol className="mt-10 grid gap-5 sm:grid-cols-2">
+          {deviceLayers.map((layer, index) => (
+            <li key={layer.id} className={cardClass}>
+              <div className="flex items-start gap-4">
+                {/* Premium visual: a glacier-gradient step medallion. No
+                    per-ingredient photography exists, so this stands in for it
+                    rather than a stock image that could imply a false source. */}
+                <span
+                  aria-hidden="true"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[radial-gradient(circle_at_30%_25%,rgba(159,212,240,0.9),rgba(61,148,196,0.35)_70%,rgba(6,19,33,0)_100%)] font-display text-lg text-navy-900"
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <p className="font-mono text-[0.6rem] tracking-[0.3em] text-glacier-500/80 uppercase">
+                    Step {index + 1} of {deviceLayers.length}
+                  </p>
+                  <h3 className="mt-1 font-display text-2xl leading-tight font-light text-ice">
+                    {layer.name}
+                  </h3>
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm leading-relaxed text-pretty text-silver">
+                {layer.description}
+              </p>
+              {layer.verifiedFunction && (
+                <p className="mt-2 text-sm leading-relaxed text-pretty text-ice">
+                  {layer.verifiedFunction}
+                </p>
+              )}
+              {layer.sourceNote && (
+                <p className="mt-3 text-[0.7rem] leading-relaxed text-silver-dim">
+                  {layer.sourceNote}
+                  {layer.verificationStatus && <> · {layer.verificationStatus}</>}
+                </p>
+              )}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* -------------------------------------------------------------- *
+          B. BENEFITS OF INGREDIENTS — responsibly worded, no medical claims.
+          -------------------------------------------------------------- */}
+      <section className="mx-auto max-w-4xl px-6 py-16 md:py-20">
+        <p className={eyebrowClass}>{ingredientBenefits.heading}</p>
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-pretty text-silver md:text-lg">
+          {ingredientBenefits.intro}
+        </p>
+
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          {ingredientBenefits.items.map((item) => (
+            <div key={item.id} className={cardClass}>
+              <h3 className="font-display text-xl leading-tight font-light text-ice">
+                {item.title}
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-pretty text-silver">
+                {item.body}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-8 rounded-2xl border border-glacier-500/20 bg-glacier-500/5 p-5 text-[0.8rem] leading-relaxed text-pretty text-silver-dim">
+          {ingredientBenefits.disclaimer}
+        </p>
+      </section>
+
+      {/* -------------------------------------------------------------- *
+          C. FRUIT & FOOD COMPARISON — educational only, sourced from official
+          nutrition databases, clearly labelled as not a claim about the water.
+          -------------------------------------------------------------- */}
+      <section className="mx-auto max-w-4xl px-6 py-16 md:py-20">
+        <p className={eyebrowClass}>{fruitComparison.heading}</p>
+        <p className="mt-4 rounded-2xl border border-white/15 bg-white/5 p-4 text-sm leading-relaxed text-pretty text-ice">
+          {fruitComparison.label}
+        </p>
+        <p className="mt-6 max-w-2xl text-base leading-relaxed text-pretty text-silver md:text-lg">
+          {fruitComparison.intro}
+        </p>
+
+        <div className="mt-8 overflow-x-auto">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-white/15">
+                <th className="py-3 pr-4 font-mono text-[0.65rem] tracking-[0.2em] text-glacier-300 uppercase">
+                  Mineral
+                </th>
+                <th className="py-3 font-mono text-[0.65rem] tracking-[0.2em] text-glacier-300 uppercase">
+                  Where it occurs naturally in food
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {fruitComparison.rows.map((row) => (
+                <tr key={row.mineral} className="border-b border-white/10 align-top">
+                  <th
+                    scope="row"
+                    className="py-4 pr-4 font-display text-lg font-light whitespace-nowrap text-ice"
+                  >
+                    {row.mineral}
+                  </th>
+                  <td className="py-4 leading-relaxed text-pretty text-silver">
+                    {row.foods}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="mt-6 text-[0.8rem] leading-relaxed text-pretty text-silver-dim">
+          {fruitComparison.note}
+        </p>
+
+        <div className="mt-6">
+          <p className="font-mono text-[0.65rem] tracking-[0.25em] text-silver-dim uppercase">
+            Sources
+          </p>
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {fruitComparison.sources.map((source) => (
+              <li key={source.href}>
+                <a
+                  href={source.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-glacier-300 underline decoration-glacier-500/40 underline-offset-2 transition-colors hover:text-ice"
+                >
+                  {source.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Wayfinding to the two most likely next steps. */}
+      <section className="mx-auto max-w-4xl px-6 pb-24">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/leadership"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/25 bg-white/5 px-8 py-3.5 text-sm font-medium tracking-wide text-ice transition-colors hover:bg-white/10"
+          >
+            A note from the founder
+          </Link>
+          <Link
+            href="/contact"
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-ice px-8 py-3.5 text-sm font-medium tracking-wide text-navy-900 transition-colors hover:bg-white"
+          >
+            Contact us
+          </Link>
+        </div>
+      </section>
+
+      <SiteFooter />
     </main>
   );
 }

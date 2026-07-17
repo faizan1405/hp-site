@@ -650,10 +650,29 @@ export const buyNowWhatsappHref = `https://wa.me/${buyNowWhatsapp.number}?text=$
 )}`;
 
 export const founder = {
-  /** TODO(client): founder name, role, story and portrait. */
-  name: null as string | null,
-  role: null as string | null,
-  story: null as string | null,
+  /** Confirmed by the client. */
+  name: "Arveen Maan" as string | null,
+  /** Confirmed by the client. */
+  role: "Founder & CEO" as string | null,
+  /**
+   * The founder's own note, supplied verbatim by the client and rendered on the
+   * `/leadership` page as separate paragraphs. Kept as an array so the page can
+   * space each paragraph without splitting a single string at render time.
+   */
+  story: [
+    "At Himalaya Sparsh™, leadership begins with purpose.",
+    "From the very beginning, my vision has been to build more than a product—I believe that meaningful innovation is born when nature, science, and thoughtful design come together to solve everyday challenges.",
+    "This journey has been driven by curiosity, continuous learning, and an unwavering commitment to quality. Every decision we make is guided by a simple principle: if we are going to create something that becomes part of people's daily lives, it must be crafted with integrity, precision, and care.",
+    "Leadership, to me, is about setting a clear vision while empowering a team to pursue excellence with passion and accountability. It means embracing innovation without losing sight of responsibility, listening to our customers, and constantly striving to improve every aspect of what we do.",
+    "As Himalaya Sparsh continues to grow, our commitment remains unchanged—to build a globally respected Indian brand that represents quality, trust, innovation, and exceptional craftsmanship. We aspire to deliver experiences that reflect the purity of nature while meeting the expectations of modern lifestyles.",
+    "I sincerely thank our customers, partners, and supporters for placing their trust in Himalaya Sparsh. Your confidence motivates us to continue innovating and raising the standard of premium hydration.",
+    "Together, we are building more than a product—we are shaping the future of premium hydration.",
+  ] as string[],
+  /**
+   * TODO(client): a founder portrait. Null renders an elegant monogram
+   * placeholder on the leadership page instead — drop a path in here and the
+   * page shows the real photograph with no other change.
+   */
   image: null as string | null,
 } as const;
 
@@ -690,21 +709,320 @@ export const aboutWhatsappHref: string | null = contact.phone
     )}`
   : null;
 
-/** The site's persistent top navigation. */
+/**
+ * The site's persistent top navigation. "How It Works" points at the homepage
+ * itself — the scroll journey IS the explanation of how the device works — so it
+ * is not a duplicate route but a labelled entry into the same experience. Every
+ * other item is its own standalone page, kept out of the pinned timeline.
+ */
 export const nav = {
   links: [
-    { label: "Home", href: "/" },
-    { label: "About", href: "/about" },
+    { label: "How It Works", href: "/" },
+    { label: "About Us", href: "/about" },
+    { label: "Leadership", href: "/leadership" },
+    { label: "Reviews", href: "/reviews" },
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Contact Us", href: "/contact" },
   ],
 } as const;
 
-/** Copy for the standalone `/about` page — kept out of the homepage's scroll timeline. */
+/**
+ * Copy for the standalone `/about` page — kept out of the homepage's scroll
+ * timeline. `body` is the client's own brand copy, verbatim, held as an array so
+ * each paragraph is spaced by the page rather than by splitting a string at
+ * render time. `closing` is the three-line sign-off the client supplied.
+ */
 export const about = {
-  eyebrow: "About",
-  heading: "About Himalaya Sparsh",
+  eyebrow: "About Us",
+  heading: "About Himalaya Sparsh™",
+  subheading: "Redefining the Future of Premium Hydration",
   intro:
     "Himalaya Sparsh presents a thoughtfully designed water-converter device inspired by the natural journey of Himalayan water. The device combines multiple internal media layers to create a unique water experience for everyday use.",
+  body: [
+    "At Himalaya Sparsh™, we believe water should do more than simply quench thirst—it should elevate everyday living.",
+    "In today's rapidly changing world, access to naturally sourced mountain water has become increasingly limited. Modern lifestyles often rely on treated water that prioritizes safety and convenience, yet many people continue to seek a more natural and refreshing drinking experience. Himalaya Sparsh was created to bridge this gap through an innovative, non-electric hydration device designed to complement purified water.",
+    "Every Himalaya Sparsh device is meticulously crafted using premium-grade materials and carefully selected natural mineral media within a precision-engineered system. The result is a refined hydration experience inspired by the purity and balance associated with Himalayan water.",
+    "Beyond functionality, Himalaya Sparsh reflects a philosophy of craftsmanship, wellness, and sustainability. Our products are designed not only to perform with consistency but also to embody elegance, making them equally suited for modern homes, premium hospitality, luxury retail, and discerning lifestyles.",
+    "Innovation remains at the heart of everything we do. From product development to customer experience, we are committed to delivering exceptional quality, purposeful design, and uncompromising attention to detail.",
+    "As we continue to expand globally, our mission remains unchanged—to inspire a new appreciation for water through thoughtful innovation while building one of the world's most trusted premium hydration brands.",
+    "At Himalaya Sparsh™, we are not simply creating products; we are shaping a new standard for everyday hydration.",
+  ] as string[],
+  closing: {
+    name: "Himalaya Sparsh™",
+    descriptor: "The Real Magnetic Alkaline Mountain Water Device",
+    tagline: "The Living Water Revolution.",
+  },
+  ingredientsHeading: "Ingredients",
+  ingredientsIntro:
+    "The confirmed media inside every Himalaya Sparsh device, in the order the water meets them. Each entry describes what the material is and where it sits in the column — what it is intended to do is noted cautiously and, where a claim would need it, marked as awaiting laboratory confirmation.",
   contactHeading: "Get in touch",
+} as const;
+
+/* -------------------------------------------------------------------------- *
+ * BENEFITS OF INGREDIENTS — responsibly worded.
+ *
+ * This section exists to explain, in general terms, why the *categories* of
+ * material inside the device are used, without asserting a medical, disease,
+ * pH, ORP, TDS or guaranteed-mineral outcome for THIS product. Every entry is
+ * framed as "traditionally used" / "intended to" / "may contribute", and the
+ * whole section carries the disclaimer below. Nothing here names a disease,
+ * a cure, an exact figure, or a certification.
+ * -------------------------------------------------------------------------- */
+
+export const ingredientBenefits = {
+  heading: "Benefits of Ingredients",
+  intro:
+    "The materials chosen for Himalaya Sparsh are drawn from natural mineral media and traditional water-contact practices. The notes below describe the general roles these categories of material are associated with. They are not medical claims, and they do not describe a measured outcome for the water this specific device produces.",
+  items: [
+    {
+      id: "mineral-media",
+      title: "Natural mineral stones",
+      body: "Himalayan, Korean and Japanese mineral stones are used as contact media through which water passes. Such media are traditionally associated with contributing to a water's mineral character and a clean, balanced taste. Any actual change in mineral content depends on testing.",
+    },
+    {
+      id: "magnesium-zinc",
+      title: "Magnesium & zinc media",
+      body: "Magnesium and zinc are minerals the body uses in everyday nutrition, most of which people obtain from food. Inside the device they act as additional mineral-contact stages and are intended to support the overall conditioning of the water. The device is not presented as a dietary source of these minerals.",
+    },
+    {
+      id: "silver",
+      title: "Silver",
+      body: "Silver is commonly used in water systems and storage vessels, where it is intended to help limit unwanted microbial growth and keep water fresher for longer. Product-specific performance requires laboratory confirmation.",
+    },
+    {
+      id: "jamun-wood",
+      title: "Jamun wood",
+      body: "Jamun wood has a long tradition of use in water-storage and water-contact applications, where it is valued for helping keep stored water fresh and free of unpleasant odours. This is a traditional-use association rather than a tested claim.",
+    },
+    {
+      id: "magnet",
+      title: "Magnetic stage",
+      body: "The magnetic stage exposes flowing water to a controlled magnetic field as an additional conditioning step, without changing the natural appearance or flow of the water. The evidence for magnetic treatment of water is limited.",
+    },
+  ] as { id: string; title: string; body: string }[],
+  disclaimer:
+    "These descriptions are general and educational. Himalaya Sparsh makes no medical, disease-treatment, weight, immunity, detoxification or diagnostic claims. Product-specific performance — including any mineral release, pH change or ORP change — requires independent laboratory confirmation and depends on testing.",
+} as const;
+
+/* -------------------------------------------------------------------------- *
+ * FRUIT / FOOD COMPARISON — educational only.
+ *
+ * This is NOT a claim that a glass of water from the device equals any number
+ * of fruits, or contains any specific quantity of a mineral. No such lab report
+ * exists. It simply shows that the minerals associated with some of the device
+ * media are also found naturally in everyday foods — sourced from the NIH
+ * Office of Dietary Supplements consumer fact sheets and USDA FoodData Central,
+ * and worded to match them (e.g. fruit is NOT presented as a major source of
+ * zinc or copper, because those official sources do not present it that way).
+ * -------------------------------------------------------------------------- */
+
+export const fruitComparison = {
+  heading: "Fruit & food comparison",
+  label:
+    "Educational ingredient comparison — not a claim about the exact nutrient content of water produced by the device.",
+  intro:
+    "Some of the minerals associated with the device's mineral media are also found naturally in everyday foods. The table below is drawn from official nutrition sources and is provided purely to illustrate where these minerals occur in a normal diet.",
+  rows: [
+    {
+      mineral: "Magnesium",
+      foods: "Nuts, seeds, legumes, whole grains and leafy greens such as spinach are the main sources; fruits such as banana and avocado contribute smaller amounts.",
+    },
+    {
+      mineral: "Potassium",
+      foods: "Found in many fruits and vegetables — including banana, orange, dried apricots and potato — as well as beans and leafy greens.",
+    },
+    {
+      mineral: "Calcium",
+      foods: "Dairy foods, fortified foods, canned fish with soft bones and green vegetables such as kale and broccoli are leading sources; figs and oranges add smaller amounts.",
+    },
+    {
+      mineral: "Zinc",
+      foods: "Mainly from meat, poultry, seafood, beans, nuts, whole grains and dairy. Fruit is not a significant source of zinc.",
+    },
+    {
+      mineral: "Copper",
+      foods: "Shellfish, nuts, seeds, whole grains and organ meats are the primary sources; fruit is a minor source.",
+    },
+  ] as { mineral: string; foods: string }[],
+  sources: [
+    {
+      label: "USDA FoodData Central",
+      href: "https://fdc.nal.usda.gov/",
+    },
+    {
+      label: "NIH Office of Dietary Supplements — Magnesium (Consumer)",
+      href: "https://ods.od.nih.gov/factsheets/Magnesium-Consumer/",
+    },
+    {
+      label: "NIH Office of Dietary Supplements — Potassium (Consumer)",
+      href: "https://ods.od.nih.gov/factsheets/Potassium-Consumer/",
+    },
+    {
+      label: "NIH Office of Dietary Supplements — Calcium (Consumer)",
+      href: "https://ods.od.nih.gov/factsheets/Calcium-Consumer/",
+    },
+    {
+      label: "NIH Office of Dietary Supplements — Zinc (Consumer)",
+      href: "https://ods.od.nih.gov/factsheets/Zinc-Consumer/",
+    },
+    {
+      label: "NIH Office of Dietary Supplements — Copper (Consumer)",
+      href: "https://ods.od.nih.gov/factsheets/Copper-Consumer/",
+    },
+  ] as { label: string; href: string }[],
+  note: "Copper, and copper-bearing metals, are not among the nine confirmed media inside the current device; copper is included here only for educational completeness because it appears in the client's reference material.",
+} as const;
+
+/* -------------------------------------------------------------------------- *
+ * LEADERSHIP — the founder's note. See `founder` above for the copy itself.
+ * -------------------------------------------------------------------------- */
+
+export const leadership = {
+  eyebrow: "Leadership",
+  heading: "A Note from the Founder",
+  intro:
+    "At Himalaya Sparsh™, leadership begins with purpose — a commitment to craftsmanship, integrity and thoughtful innovation.",
+} as const;
+
+/* -------------------------------------------------------------------------- *
+ * REVIEWS.
+ *
+ * `approved` ships EMPTY on purpose — same as the null rule everywhere else. No
+ * review appears until a real, moderated one is added here (or a backend serves
+ * one). The submission form on `/reviews` is presentational: there is no API,
+ * database or moderation backend in this project yet, so the form validates and
+ * hands off to WhatsApp/email rather than pretending to persist a review. See
+ * the report for exactly what a real review workflow would require.
+ * -------------------------------------------------------------------------- */
+
+export type Review = {
+  id: string;
+  name: string;
+  rating: number;
+  text: string;
+  /** ISO date, e.g. "2026-06-01". */
+  date: string;
+  /** Only ever true when a real order backs it. */
+  verifiedPurchase?: boolean;
+};
+
+export const reviews = {
+  eyebrow: "Reviews",
+  heading: "What people are saying",
+  intro:
+    "Genuine, moderated customer reviews appear here. We publish only real, approved feedback — never placeholder testimonials.",
+  /** Real, approved reviews only. Empty until the client supplies verified ones. */
+  approved: [] as Review[],
+  emptyState:
+    "There are no approved reviews yet. Once verified customers share their experience, their reviews will appear here.",
+  formHeading: "Share your experience",
+  formIntro:
+    "Reviews are read and moderated before they appear. Submitting sends your review to our team for approval.",
+} as const;
+
+/* -------------------------------------------------------------------------- *
+ * DASHBOARD.
+ *
+ * There is no authentication or customer-account backend in this project. The
+ * `/dashboard` page therefore renders an honest preview of what a customer area
+ * will contain, clearly labelled as requiring sign-in, rather than faking
+ * orders, enquiries or account data. The report lists exactly what backend work
+ * would light this up.
+ * -------------------------------------------------------------------------- */
+
+export const dashboard = {
+  eyebrow: "Dashboard",
+  heading: "Your account",
+  intro:
+    "Customer accounts are not yet enabled on this site. When they are, you will manage everything below from here.",
+  notice:
+    "Sign-in and customer accounts require a backend that this site does not yet include. Nothing on this page is live data — it is a preview of the account area to come.",
+  features: [
+    {
+      id: "profile",
+      title: "Profile & account details",
+      body: "Your name, email and saved contact details, editable in one place.",
+    },
+    {
+      id: "enquiries",
+      title: "Enquiry status",
+      body: "Track WhatsApp and email enquiries you have raised with our team.",
+    },
+    {
+      id: "orders",
+      title: "Order & purchase status",
+      body: "Follow orders from confirmation to delivery, once ordering goes live.",
+    },
+    {
+      id: "reviews",
+      title: "Your reviews",
+      body: "See the reviews you have submitted and their moderation status.",
+    },
+    {
+      id: "support",
+      title: "Support & WhatsApp",
+      body: "Reach our team directly for help with your device or your order.",
+    },
+  ] as { id: string; title: string; body: string }[],
+} as const;
+
+/* -------------------------------------------------------------------------- *
+ * CONTACT PAGE.
+ *
+ * The details themselves live in `contact` above. This block holds the page's
+ * own copy and a map link built from the confirmed address. The contact FORM is
+ * presentational only — there is no email service, API or database wired to it,
+ * so on submit it opens the visitor's own mail client / WhatsApp with the
+ * message pre-filled rather than claiming a submission was stored. See report.
+ * -------------------------------------------------------------------------- */
+
+export const contactPage = {
+  eyebrow: "Contact Us",
+  heading: "Get in touch",
+  intro:
+    "We would love to hear from you. Reach us on WhatsApp, by phone or email, or send a message below.",
+  whatsappHref: `https://wa.me/${buyNowWhatsapp.number}`,
+  /** A Google Maps search link built from the confirmed address. */
+  mapHref: contact.address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        contact.address,
+      )}`
+    : null,
+  formHeading: "Send a message",
+  formIntro:
+    "Fill in the form and it will open your email app with the details ready to send. You can also message us directly on WhatsApp.",
+} as const;
+
+/**
+ * Per-page metadata, kept beside the copy it describes. Each page reads its own
+ * entry so titles and descriptions stay consistent and configurable in one file.
+ */
+export const pageSeo = {
+  about: {
+    title: about.heading,
+    description:
+      "About Himalaya Sparsh™ — redefining premium hydration with a non-electric device built from carefully selected natural mineral media, inspired by Himalayan water.",
+  },
+  leadership: {
+    title: leadership.heading,
+    description:
+      "A note from Arveen Maan, Founder & CEO of Himalaya Sparsh™, on purpose, craftsmanship and the future of premium hydration.",
+  },
+  reviews: {
+    title: reviews.heading,
+    description:
+      "Genuine, moderated customer reviews of Himalaya Sparsh™. We publish only real, approved feedback.",
+  },
+  dashboard: {
+    title: dashboard.heading,
+    description:
+      "Your Himalaya Sparsh™ account area — profile, enquiries, orders, reviews and support, all in one place.",
+  },
+  contact: {
+    title: contactPage.heading,
+    description:
+      "Contact Himalaya Sparsh™ — WhatsApp, phone, email and address. Open 24/7 for enquiries about our premium hydration device.",
+  },
 } as const;
 
 export const seo = {
