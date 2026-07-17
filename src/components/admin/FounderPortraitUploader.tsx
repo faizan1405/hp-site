@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useId, useState, useTransition } from "react";
-import { setFounderPortrait } from "@/app/admin/settings/actions";
+import { setFounderPortrait } from "@/app/admin/(protected)/settings/actions";
 
 export function FounderPortraitUploader({ currentImageUrl }: { currentImageUrl: string | null }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl);

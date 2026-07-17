@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useTransition } from "react";
-import { setUserActive, setUserRole } from "@/app/admin/actions";
+import { setUserActive, setUserRole } from "@/app/admin/(protected)/actions";
 import type { UserRole } from "@/lib/db/schema";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";

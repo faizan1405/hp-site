@@ -47,6 +47,7 @@ Auth.js's database session strategy both need it — nothing here runs on Edge).
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | No — uploads 400 until set | Image uploads (profile photos, review photos) |
 | `ADMIN_EMAILS` | No | Comma-separated Google account emails auto-promoted to `ADMIN` on sign-in |
 | `CONTACT_RECEIVER_EMAIL` | No | Where contact-form notification emails go, if Resend is configured |
+| `ADMIN_LOGIN_EMAIL` / `ADMIN_LOGIN_PASSWORD_HASH` | No — `/admin/login` rejects everything until set | The fixed admin credentials-login account; see "Admin credentials login" below |
 | `RESEND_API_KEY` / `EMAIL_FROM` | No | Enables the optional contact-notification email. Enquiries save to MongoDB either way — this only adds a notification on top |
 
 The server never reads these eagerly: a missing **optional** var (Cloudinary,
@@ -86,6 +87,56 @@ to use it (`src/lib/env.ts`), not at build time.
    on every sign-in, so adding an email later promotes the existing account
    the next time it logs in.
 
+### Admin credentials login
+
+A second, independent way into `/admin` — a single fixed email/password
+account at **`/admin/login`** — for the times signing in with Google isn't
+practical. Google sign-in for `ADMIN_EMAILS` accounts still works exactly as
+above; this is additive, not a replacement.
+
+1. **Generate the password hash.** Run:
+
+   ```bash
+   node scripts/hash-admin-password.mjs
+   ```
+
+   It prompts for the password at a hidden, no-echo terminal prompt and
+   prints a bcrypt hash. The password itself is never written to disk, never
+   passed as a command-line argument (which would land in shell history),
+   and never sent anywhere — only the resulting hash is printed, and only
+   the hash gets stored anywhere.
+
+2. **Add the variables locally.** In `.env.local`:
+
+   ```
+   ADMIN_LOGIN_EMAIL=admin@himalayasparsh.com
+   ADMIN_LOGIN_PASSWORD_HASH=<the hash the script printed>
+   ```
+
+   Restart `next dev` afterward. Until `ADMIN_LOGIN_PASSWORD_HASH` is set,
+   `/admin/login` rejects every attempt with the same generic error it always
+   shows — it fails closed, not open.
+
+3. **Add them to Vercel.** Project Settings → Environment Variables → add
+   both `ADMIN_LOGIN_EMAIL` and `ADMIN_LOGIN_PASSWORD_HASH` (Production, and
+   Preview if preview deploys need admin access too), then redeploy.
+
+4. **Open `/admin/login`**, sign in with that email and password. On success
+   it redirects to `/admin`. The same account is also just a normal row in
+   the `users` collection — `role: "ADMIN"`, `isActive: true` — so everything
+   in the admin panel (including user management) treats it identically to
+   an admin who signed in with Google.
+
+5. **To change the password later**, re-run
+   `node scripts/hash-admin-password.mjs`, replace
+   `ADMIN_LOGIN_PASSWORD_HASH` locally and in Vercel with the new hash, and
+   redeploy. There's no "old password" to invalidate — the hash is the only
+   thing that determines what's accepted, so replacing it is the whole
+   rotation.
+
+The real email and hash must never be committed: `.env.example` only ever
+holds the variable names, and `.env.local` is gitignored.
+
 ### Cloudinary setup
 
 1. Create a free account at [cloudinary.com](https://cloudinary.com).
@@ -110,9 +161,12 @@ to use it (`src/lib/env.ts`), not at build time.
 
 ### What's implemented
 
-- **Auth**: Google sign-in only, via Auth.js v5 (`next-auth@beta`) with the
-  official MongoDB adapter — one `users` collection, deduped by Google
-  account, extended with `role` (`USER`/`ADMIN`), `isActive`, and timestamps.
+- **Auth**: Auth.js v5 (`next-auth@beta`), two providers into the same
+  `users` collection — Google OAuth (via the official MongoDB adapter,
+  deduped by account) and a single fixed email/password admin account (via
+  the Credentials provider, bcrypt-hashed, `/admin/login`). Sessions are JWT
+  for both, with `role`/`isActive` re-read from Mongo on every request so a
+  role change or deactivation takes effect immediately, not just next login.
 - **Dashboard** (`/dashboard`): protected, shows the real signed-in profile,
   an editable phone/address form, a Cloudinary profile-photo uploader, and
   the user's own contact enquiries and reviews with live moderation status.

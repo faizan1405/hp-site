@@ -16,3 +16,11 @@ declare module "@auth/core/adapters" {
     isActive: boolean;
   }
 }
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    id: string;
+    role: "USER" | "ADMIN";
+    isActive: boolean;
+  }
+}

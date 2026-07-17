@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useTransition } from "react";
-import { deleteReview, moderateReview } from "@/app/admin/actions";
+import { deleteReview, moderateReview } from "@/app/admin/(protected)/actions";
 import type { CloudinaryImageRef, ReviewStatus } from "@/lib/db/schema";
 import { StatusBadge, type BadgeTone } from "@/components/admin/StatusBadge";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";

@@ -1,17 +1,25 @@
 import "server-only";
 import { headers } from "next/headers";
 
-/** Best-effort client IP from proxy headers. Vercel always sets these. */
-export async function getClientIp(): Promise<string> {
-  const headersList = await headers();
-  const forwardedFor = headersList.get("x-forwarded-for");
+/** Best-effort client IP from proxy headers. Vercel always sets these. Takes
+ * a header lookup function rather than a `Headers` object so it works both
+ * from `next/headers()` (Server Components, Route Handlers, Server Actions)
+ * and from a raw Fetch API `Request` (Auth.js's `authorize()` callback,
+ * which does not run inside `next/headers`'s request-scoped context). */
+export function extractClientIp(getHeader: (name: string) => string | null): string {
+  const forwardedFor = getHeader("x-forwarded-for");
   if (forwardedFor) {
     const [first] = forwardedFor.split(",");
     if (first?.trim()) return first.trim();
   }
-  const realIp = headersList.get("x-real-ip");
+  const realIp = getHeader("x-real-ip");
   if (realIp) return realIp.trim();
   return "unknown";
+}
+
+export async function getClientIp(): Promise<string> {
+  const headersList = await headers();
+  return extractClientIp((name) => headersList.get(name));
 }
 
 /** ASCII control characters, excluding tab/newline/carriage-return. */

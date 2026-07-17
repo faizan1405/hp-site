@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { deleteMediaAsset } from "@/app/admin/media/actions";
+import { deleteMediaAsset } from "@/app/admin/(protected)/media/actions";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import type { CloudinaryListedAsset } from "@/lib/cloudinary";
 

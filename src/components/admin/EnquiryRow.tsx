@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { deleteEnquiry, updateEnquiryNote, updateEnquiryStatus } from "@/app/admin/actions";
+import { deleteEnquiry, updateEnquiryNote, updateEnquiryStatus } from "@/app/admin/(protected)/actions";
 import type { ContactEnquiryStatus } from "@/lib/db/schema";
 import { StatusBadge, type BadgeTone } from "@/components/admin/StatusBadge";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";

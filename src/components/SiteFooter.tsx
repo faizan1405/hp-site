@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { contact, nav, siteName } from "@/config/content";
+import { SiteFooterAdminLink } from "@/components/SiteFooterAdminLink";
 
 /**
  * The closing block of the page: internal navigation and full contact details,
@@ -49,6 +50,8 @@ export function SiteFooter() {
           )}
           {contact.hours && <span className="text-silver-dim">{contact.hours}</span>}
         </div>
+
+        <SiteFooterAdminLink />
       </div>
     </footer>
   );

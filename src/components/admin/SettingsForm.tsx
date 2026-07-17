@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { updateSettings, type SettingsActionState } from "@/app/admin/settings/actions";
+import { updateSettings, type SettingsActionState } from "@/app/admin/(protected)/settings/actions";
 
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-glacier-500 focus:outline-none";

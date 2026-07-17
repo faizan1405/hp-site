@@ -39,9 +39,23 @@ export async function requireSessionForPage(callbackUrl: string): Promise<Sessio
   return session;
 }
 
-/** For Server Component pages — redirects instead of throwing. */
+/**
+ * For Server Component pages under `/admin` — redirects instead of throwing.
+ * Deliberately does NOT delegate to `requireSessionForPage`: that helper
+ * sends an unauthenticated visitor to the customer `/signin` page, but an
+ * unauthenticated visitor to `/admin/*` should land on the dedicated
+ * `/admin/login` page instead. A signed-in non-admin (an ordinary customer)
+ * still goes to `/dashboard` — they don't need a login page, they need their
+ * own account area.
+ */
 export async function requireAdminForPage(): Promise<Session> {
-  const session = await requireSessionForPage("/admin");
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/admin/login?callbackUrl=%2Fadmin");
+  }
+  if (!session.user.isActive) {
+    redirect("/admin/login?error=AccessDenied");
+  }
   if (session.user.role !== "ADMIN") {
     redirect("/dashboard");
   }

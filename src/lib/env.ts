@@ -49,6 +49,10 @@ const rawEnvSchema = z.object({
   ADMIN_EMAILS: optionalString(),
   CONTACT_RECEIVER_EMAIL: optionalEmail(),
 
+  // Fixed admin credentials login (separate from Google) — see .env.example.
+  ADMIN_LOGIN_EMAIL: optionalEmail(),
+  ADMIN_LOGIN_PASSWORD_HASH: optionalString(),
+
   RESEND_API_KEY: optionalString(),
   EMAIL_FROM: optionalString(),
 });
@@ -108,6 +112,12 @@ export const env = {
   get CONTACT_RECEIVER_EMAIL() {
     return readRawEnv().CONTACT_RECEIVER_EMAIL ?? null;
   },
+  get ADMIN_LOGIN_EMAIL() {
+    return readRawEnv().ADMIN_LOGIN_EMAIL ?? null;
+  },
+  get ADMIN_LOGIN_PASSWORD_HASH() {
+    return readRawEnv().ADMIN_LOGIN_PASSWORD_HASH ?? null;
+  },
   get RESEND_API_KEY() {
     return readRawEnv().RESEND_API_KEY ?? null;
   },
@@ -142,6 +152,20 @@ export function getCloudinaryConfig() {
     apiKey: raw.CLOUDINARY_API_KEY as string,
     apiSecret: raw.CLOUDINARY_API_SECRET as string,
   };
+}
+
+/** A bcrypt hash always looks like $2a$10$..., $2b$12$... etc. — a quick sanity
+ * check that catches a plaintext password pasted into the wrong variable. */
+const BCRYPT_HASH_PATTERN = /^\$2[aby]\$\d{2}\$/;
+
+/** True once the fixed admin credentials login (email + bcrypt hash) is fully configured. */
+export function isAdminCredentialsConfigured(): boolean {
+  const raw = readRawEnv();
+  return Boolean(
+    raw.ADMIN_LOGIN_EMAIL &&
+      raw.ADMIN_LOGIN_PASSWORD_HASH &&
+      BCRYPT_HASH_PATTERN.test(raw.ADMIN_LOGIN_PASSWORD_HASH),
+  );
 }
 
 /** Parses ADMIN_EMAILS into a lowercase, de-duplicated set. Empty when unset. */
